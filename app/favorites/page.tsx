@@ -1,3 +1,5 @@
+import Navbar from '@/components/Navbar';
+import Footer from '@/components/Footer';
 import FavoritesClient from "./FavoritesClient";
 
 export const metadata = {
@@ -6,5 +8,13 @@ export const metadata = {
 };
 
 export default function FavoritesPage() {
-  return <FavoritesClient />;
+  return (
+    <main className="min-h-screen bg-surface-alt font-sans flex flex-col" dir="rtl">
+      <Navbar />
+      <div className="flex-grow">
+        <FavoritesClient />
+      </div>
+      <Footer />
+    </main>
+  );
 }
