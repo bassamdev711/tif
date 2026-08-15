@@ -56,7 +56,7 @@ export default function CartClient() {
                         src={item.imageUrl} 
                         alt={item.name} 
                         fill 
-                        className="object-cover md:object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" 
+                        className="object-cover mix-blend-multiply group-hover:scale-105 transition-transform duration-500" 
                         sizes="128px"
                       />
                     ) : (

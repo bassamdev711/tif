@@ -562,7 +562,7 @@ export default function CheckoutClient() {
                   <div key={item.id} className="flex items-start gap-3">
                     <div className="w-14 h-14 md:w-20 md:h-20 bg-white shrink-0 border border-black/5 flex items-center justify-center relative overflow-hidden">
                       {item.imageUrl ? (
-                        <Image src={item.imageUrl} alt={item.name} fill className="object-cover md:object-contain mix-blend-multiply" />
+                        <Image src={item.imageUrl} alt={item.name} fill className="object-cover mix-blend-multiply" />
                       ) : (
                         <span className="text-accent">طيف</span>
                       )}
