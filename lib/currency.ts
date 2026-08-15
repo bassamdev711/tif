@@ -6,8 +6,8 @@ export async function getCurrency() {
       where: { id: 'singleton' },
       select: { currency: true }
     })
-    return paymentSettings?.currency || 'ر.س'
+    return paymentSettings?.currency || 'ر.ي'
   } catch {
-    return 'ر.س'
+    return 'ر.ي'
   }
 }

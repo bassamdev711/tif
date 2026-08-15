@@ -7,25 +7,25 @@
 */
 @theme {
   /* ── القيم الأساسية (مصدرها brand-theme.css) ── */
-  --color-brand:      #171512;
-  --color-accent:     #C9A45C;
-  --color-surface:    #F8F5EF;
-  --color-foreground: #24211D;
+  --color-brand:      #123C35;
+  --color-accent:     #C8A45D;
+  --color-surface:    #F5F1E8;
+  --color-foreground: #202522;
 
   /* ── مشتقات تلقائية ── */
-  --color-brand-hover:       color-mix(in srgb, #171512 80%, black);
-  --color-brand-light:       color-mix(in srgb, #171512 15%, white);
-  --color-brand-dark:        color-mix(in srgb, #171512 60%, black);
-  --color-accent-light:      color-mix(in srgb, #C9A45C 70%, white);
-  --color-accent-dark:       color-mix(in srgb, #C9A45C 70%, black);
-  --color-surface-alt:       color-mix(in srgb, #F8F5EF 95%, black);
-  --color-foreground-dark:   color-mix(in srgb, #24211D 40%, black);
+  --color-brand-hover:       color-mix(in srgb, #123C35 80%, black);
+  --color-brand-light:       color-mix(in srgb, #123C35 15%, white);
+  --color-brand-dark:        color-mix(in srgb, #123C35 60%, black);
+  --color-accent-light:      color-mix(in srgb, #C8A45D 70%, white);
+  --color-accent-dark:       color-mix(in srgb, #C8A45D 70%, black);
+  --color-surface-alt:       color-mix(in srgb, #F5F1E8 95%, black);
+  --color-foreground-dark:   color-mix(in srgb, #202522 40%, black);
 
   /* ── خاص بالرسومات / الزجاجة ── */
-  --color-bottle-brand-start: color-mix(in srgb, #171512 65%, black);
-  --color-bottle-brand-end:   color-mix(in srgb, #171512 30%, black);
-  --color-bottle-cap-light:   color-mix(in srgb, #C9A45C 85%, white);
-  --color-bottle-cap-dark:    color-mix(in srgb, #C9A45C 60%, black);
+  --color-bottle-brand-start: color-mix(in srgb, #123C35 65%, black);
+  --color-bottle-brand-end:   color-mix(in srgb, #123C35 30%, black);
+  --color-bottle-cap-light:   color-mix(in srgb, #C8A45D 85%, white);
+  --color-bottle-cap-dark:    color-mix(in srgb, #C8A45D 60%, black);
 
   /* ── خطوط وحركات ── */
   --font-sans: var(--font-tajawal), Arial, sans-serif;
@@ -38,10 +38,10 @@
   }
 
   /* ── أسماء بديلة للوحة التحكم (تُعيَّن على الهوية الجديدة تلقائياً) ── */
-  --color-emerald:    #171512;  /* كان أخضر — الآن أسود الهوية */
-  --color-gold:       #C9A45C;  /* ذهبي شامبين */
-  --color-ivory:      #F8F5EF;  /* عاجي */
-  --color-deep-green: #24211D;  /* كان أخضر غامق — الآن بني أسود */
+  --color-emerald:    #123C35;  /* كان أخضر — الآن أخضر زمردي داكن */
+  --color-gold:       #C8A45D;  /* ذهبي فاخر */
+  --color-ivory:      #F5F1E8;  /* عاجي دافئ */
+  --color-deep-green: #202522;  /* أسود مخضر */
 }
 
 :root {

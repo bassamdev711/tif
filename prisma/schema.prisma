@@ -108,7 +108,7 @@ model PaymentSettings {
   codEnabled             Boolean  @default(false)
   codFee                 Decimal  @db.Decimal(10, 2) @default(0)
   codInstructions        String?
-  currency               String   @default("ر.س")
+  currency               String   @default("ر.ي")
   updatedAt              DateTime @updatedAt
 }
 

@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       // Fonts: Google Fonts CDN
       "font-src 'self' https://fonts.gstatic.com data:",
       // Images: self + Vercel Blob + Google (avatars) + data URIs
-      "img-src 'self' https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com data: blob:",
+      "img-src 'self' https://*.public.blob.vercel-storage.com https://lh3.googleusercontent.com https://images.unsplash.com data: blob:",
       // Connect: self + Vercel Blob
       "connect-src 'self' https://*.vercel-storage.com",
       // Media: self only
@@ -77,6 +77,12 @@ const nextConfig: NextConfig = {
       {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'images.unsplash.com',
         port: '',
         pathname: '/**',
       },
