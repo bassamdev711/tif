@@ -138,7 +138,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
             
             {/* Main Image Stage */}
             <div 
-              className="w-full mx-auto aspect-square max-h-[350px] md:max-h-[500px] bg-white relative overflow-hidden border border-black/5 flex items-center justify-center cursor-zoom-in group rounded-lg"
+              className="w-full mx-auto aspect-square max-h-[400px] md:max-h-[550px] bg-white relative overflow-hidden border border-black/5 flex items-center justify-center cursor-zoom-in group rounded-lg"
               onClick={() => setLightboxOpen(true)}
             >
               <AnimatePresence mode="wait">
@@ -148,7 +148,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="relative w-full h-full flex items-center justify-center p-4 md:p-8"
+                  className="relative w-full h-full flex items-center justify-center"
                 >
                   {activeImage ? (
                     <Image
@@ -156,7 +156,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                       alt={product.name}
                       fill
                       priority
-                      className="object-contain mix-blend-multiply p-4 transition-transform duration-500 group-hover:scale-105"
+                      className="object-contain mix-blend-multiply transition-transform duration-500 group-hover:scale-105"
                       sizes={getImageSizes('detail')}
                     />
                   ) : (
@@ -189,7 +189,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                         fill
                         loading="lazy"
                         sizes={getImageSizes('thumbnail')}
-                        className="object-cover mix-blend-multiply p-1"
+                        className="object-cover md:object-contain mix-blend-multiply"
                       />
                     </div>
                   </button>

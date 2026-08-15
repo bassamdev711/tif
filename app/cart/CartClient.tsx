@@ -50,13 +50,13 @@ export default function CartClient() {
             <div className="lg:col-span-8 flex flex-col space-y-3 md:space-y-6">
               {cartItems.map((item) => (
                 <div key={item.id} className="flex flex-row items-center p-2.5 md:p-6 bg-white border border-black/5 gap-3 md:gap-6 group hover:shadow-md transition-shadow">
-                  <div className="w-16 h-20 md:w-32 md:h-40 bg-surface-alt shrink-0 relative flex items-center justify-center p-1.5 md:p-4 border border-black/5">
+                  <div className="w-16 h-20 md:w-32 md:h-40 bg-surface-alt shrink-0 relative flex items-center justify-center border border-black/5 overflow-hidden">
                     {item.imageUrl ? (
                       <Image 
                         src={item.imageUrl} 
                         alt={item.name} 
                         fill 
-                        className="object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500 p-2" 
+                        className="object-cover md:object-contain mix-blend-multiply group-hover:scale-105 transition-transform duration-500" 
                         sizes="128px"
                       />
                     ) : (
