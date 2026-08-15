@@ -73,9 +73,9 @@ async function main() {
       isActive: true,
       featured: true,
       bestseller: true,
-      imageUrl: 'https://images.unsplash.com/photo-1523293115678-d2902f508d6c?q=80&w=800&auto=format&fit=crop',
+      imageUrl: 'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?q=80&w=800&auto=format&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1523293115678-d2902f508d6c?q=80&w=800&auto=format&fit=crop'
+        'https://images.unsplash.com/photo-1585386959984-a4155224a1ad?q=80&w=800&auto=format&fit=crop'
       ]
     }
   })
@@ -127,9 +127,9 @@ async function main() {
       stock: 15,
       isActive: true,
       featured: true,
-      imageUrl: 'https://images.unsplash.com/photo-1582211594533-25b88c393084?q=80&w=800&auto=format&fit=crop',
+      imageUrl: 'https://images.unsplash.com/photo-1610461888750-10bfc601b874?q=80&w=800&auto=format&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1582211594533-25b88c393084?q=80&w=800&auto=format&fit=crop'
+        'https://images.unsplash.com/photo-1610461888750-10bfc601b874?q=80&w=800&auto=format&fit=crop'
       ]
     }
   })
@@ -144,9 +144,9 @@ async function main() {
       collectionId: oriental.id,
       stock: 10,
       isActive: true,
-      imageUrl: 'https://images.unsplash.com/photo-1616604426203-518e736888ea?q=80&w=800&auto=format&fit=crop',
+      imageUrl: 'https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=800&auto=format&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1616604426203-518e736888ea?q=80&w=800&auto=format&fit=crop'
+        'https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=800&auto=format&fit=crop'
       ]
     }
   })
