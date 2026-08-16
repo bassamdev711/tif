@@ -43,18 +43,13 @@ export default async function AdminLayout({
   })
 
   return (
-    <div dir="rtl" className="h-screen overflow-hidden bg-ivory flex flex-col md:flex-row font-sans text-deep-green">
-      <AdminSidebar profile={profile} />
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto w-full relative pb-10">
-        <SetupRedirect isSetupComplete={profile.isSetupComplete} />
-        <div className="max-w-6xl mx-auto md:px-10 mt-8">
-          <div className="px-4 md:px-0">
-            {children}
-          </div>
+    <AdminSidebar profile={profile}>
+      <SetupRedirect isSetupComplete={profile.isSetupComplete} />
+      <div className="max-w-6xl mx-auto md:px-10 mt-8">
+        <div className="px-4 md:px-0">
+          {children}
         </div>
-      </main>
-    </div>
+      </div>
+    </AdminSidebar>
   )
 }

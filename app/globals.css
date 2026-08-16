@@ -57,6 +57,11 @@ body {
   font-family: var(--font-sans);
 }
 
+body.is-admin {
+  height: 100dvh;
+  overflow: hidden;
+}
+
 .text-gradient {
   background: linear-gradient(to right, var(--color-brand), var(--color-accent));
   -webkit-background-clip: text;
