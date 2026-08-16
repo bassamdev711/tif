@@ -73,21 +73,27 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
 
   return (
     <div 
-      className={`sticky z-40 transition-all duration-500 ease-in-out bg-surface/95 backdrop-blur-md py-4 md:py-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-b border-black/5 ${
+      className={`sticky z-40 transition-all duration-500 ease-in-out bg-surface/95 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-b border-black/5 ${
         isVisible ? 'top-14 md:top-[68px]' : '-top-[200px]'
       }`}
       dir="rtl"
     >
-      <div className="w-full max-w-7xl mx-auto px-4 md:px-6">
+      <div 
+        ref={scrollRef}
+        className="w-full overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing"
+        onMouseDown={handleMouseDown}
+        onMouseLeave={handleMouseLeave}
+        onMouseUp={handleMouseUp}
+        onMouseMove={handleMouseMove}
+      >
         <div 
-          ref={scrollRef}
-          className="overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing w-full whitespace-nowrap text-right pb-4 pt-1"
-          onMouseDown={handleMouseDown}
-          onMouseLeave={handleMouseLeave}
-          onMouseUp={handleMouseUp}
-          onMouseMove={handleMouseMove}
+          className="flex w-max gap-5 md:gap-8 py-4 md:py-6 items-start"
+          style={{ 
+            paddingRight: 'max(1rem, calc((100vw - 80rem) / 2))',
+            paddingLeft: 'max(1rem, calc((100vw - 80rem) / 2))' 
+          }}
         >
-          {filters.map((f, index) => {
+          {filters.map((f) => {
             const isActive = f.href === '/products'
               ? !activeCollection
               : activeCollection === new URLSearchParams(f.href.split('?')[1]).get('collection');
@@ -96,9 +102,7 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
               <Link
                 key={f.href}
                 href={f.href}
-                className={`inline-flex flex-col items-center gap-2 group align-top ${
-                  index !== filters.length - 1 ? 'ml-5 md:ml-8' : ''
-                }`}
+                className="flex flex-col items-center gap-2 group shrink-0"
                 onDragStart={handleDragStart}
                 onClick={(e) => {
                   if (isDragging) e.preventDefault();
@@ -126,7 +130,7 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
                 </div>
                 
                 <span 
-                  className={`text-xs md:text-sm font-bold transition-colors pointer-events-none whitespace-normal text-center w-16 md:w-20 ${
+                  className={`text-xs md:text-sm font-bold transition-colors pointer-events-none text-center w-16 md:w-20 whitespace-normal ${
                     isActive ? 'text-brand' : 'text-foreground/70 group-hover:text-brand'
                   }`}
                 >
