@@ -23,7 +23,7 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
   const scrollRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
   const startXRef = useRef(0);
-  const scrollLeftRef = useRef(0);
+  const scrollStartRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
 
   useEffect(() => {
@@ -40,30 +40,21 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
+  // Drag to scroll — works with both LTR and RTL scrollLeft
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     isDraggingRef.current = true;
     setIsDragging(true);
-    startXRef.current = e.pageX - scrollRef.current.offsetLeft;
-    scrollLeftRef.current = scrollRef.current.scrollLeft;
+    startXRef.current = e.pageX;
+    scrollStartRef.current = scrollRef.current.scrollLeft;
   };
-
-  const handleMouseLeave = () => {
-    isDraggingRef.current = false;
-    setIsDragging(false);
-  };
-
-  const handleMouseUp = () => {
-    isDraggingRef.current = false;
-    setIsDragging(false);
-  };
-
+  const handleMouseLeave = () => { isDraggingRef.current = false; setIsDragging(false); };
+  const handleMouseUp   = () => { isDraggingRef.current = false; setIsDragging(false); };
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDraggingRef.current || !scrollRef.current) return;
     e.preventDefault();
-    const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startXRef.current) * 2;
-    scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
+    const delta = e.pageX - startXRef.current;
+    scrollRef.current.scrollLeft = scrollStartRef.current - delta;
   };
 
   return (
@@ -73,33 +64,29 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
       }`}
     >
       {/*
-        CORRECT SOLUTION:
-        - Both scroll container and inner flex use direction: LTR
-        - "الكل" is the first item in array → appears LEFTMOST (scrollLeft=0 shows it first)
-        - scrollLeft=0 ALWAYS shows الكل on ALL browsers and ALL screen sizes
-        - No hacks, no timeouts, no JS scroll manipulation needed
-        - Labels use dir="rtl" for proper Arabic text display
+        الحل الصحيح النهائي:
+        - حاوية التمرير: dir="rtl" مباشرةً → scrollLeft=0 يعرض اليمين (الكل) على كل المتصفحات الحديثة
+        - لا max-w wrapper خارج حاوية التمرير (كان السبب الجذري للمشكلة)
+        - padding ديناميكي داخل المحتوى ليتوافق مع max-w-7xl
       */}
       <div
         ref={scrollRef}
+        dir="rtl"
         className="w-full overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing"
-        style={{ direction: 'ltr' }}
         onMouseDown={handleMouseDown}
         onMouseLeave={handleMouseLeave}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
       >
-        {/* flex-row-reverse: يجعل الكل (أول عنصر في المصفوفة) يظهر في أقصى اليمين */}
-        {/* مع LTR scroll: scrollLeft=0 يعرض اليسار، لكن نضع padding يسار كبير ليكون الكل مرئياً */}
-        {/* الحل: نعكس المصفوفة فتصبح الكل آخر عنصر DOM وأول ما يُرى على اليمين في flex-row-reverse */}
         <div
-          className="flex flex-row-reverse items-start gap-5 md:gap-8 py-4 md:py-6 w-max"
+          className="flex items-start gap-5 md:gap-8 py-4 md:py-6"
           style={{
-            paddingLeft:  'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
+            width: 'max-content',
             paddingRight: 'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
+            paddingLeft:  'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
           }}
         >
-          {[...filters].reverse().map((f) => {
+          {filters.map((f) => {
             const isActive = f.href === '/products'
               ? !activeCollection
               : activeCollection === new URLSearchParams(f.href.split('?')[1]).get('collection');
@@ -108,11 +95,9 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
               <Link
                 key={f.href}
                 href={f.href}
-                className="flex flex-col items-center gap-2 group shrink-0"
                 draggable={false}
-                onClick={(e) => {
-                  if (isDragging) e.preventDefault();
-                }}
+                className="flex flex-col items-center gap-2 group shrink-0"
+                onClick={(e) => { if (isDragging) e.preventDefault(); }}
               >
                 <div
                   className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center overflow-hidden border-[3px] transition-all duration-300 pointer-events-none ${
@@ -131,21 +116,14 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
                       draggable={false}
                     />
                   ) : (
-                    <LayoutGrid
-                      className={`w-6 h-6 md:w-8 md:h-8 transition-all ${
-                        isActive ? 'text-brand' : 'text-foreground/40 group-hover:text-brand'
-                      }`}
-                    />
+                    <LayoutGrid className={`w-6 h-6 md:w-8 md:h-8 transition-all ${
+                      isActive ? 'text-brand' : 'text-foreground/40 group-hover:text-brand'
+                    }`} />
                   )}
                 </div>
-
-                {/* dir="rtl" only on text for correct Arabic rendering */}
-                <span
-                  dir="rtl"
-                  className={`text-xs md:text-sm font-bold transition-colors pointer-events-none text-center w-16 md:w-20 whitespace-normal ${
-                    isActive ? 'text-brand' : 'text-foreground/70 group-hover:text-brand'
-                  }`}
-                >
+                <span className={`text-xs md:text-sm font-bold transition-colors pointer-events-none text-center w-16 md:w-20 whitespace-normal ${
+                  isActive ? 'text-brand' : 'text-foreground/70 group-hover:text-brand'
+                }`}>
                   {f.label}
                 </span>
               </Link>
