@@ -89,14 +89,17 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
       >
+        {/* flex-row-reverse: يجعل الكل (أول عنصر في المصفوفة) يظهر في أقصى اليمين */}
+        {/* مع LTR scroll: scrollLeft=0 يعرض اليسار، لكن نضع padding يسار كبير ليكون الكل مرئياً */}
+        {/* الحل: نعكس المصفوفة فتصبح الكل آخر عنصر DOM وأول ما يُرى على اليمين في flex-row-reverse */}
         <div
-          className="flex items-start gap-5 md:gap-8 py-4 md:py-6 w-max"
+          className="flex flex-row-reverse items-start gap-5 md:gap-8 py-4 md:py-6 w-max"
           style={{
             paddingLeft:  'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
             paddingRight: 'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
           }}
         >
-          {filters.map((f) => {
+          {[...filters].reverse().map((f) => {
             const isActive = f.href === '/products'
               ? !activeCollection
               : activeCollection === new URLSearchParams(f.href.split('?')[1]).get('collection');
