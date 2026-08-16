@@ -40,7 +40,6 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  // Mouse Drag Handlers (LTR scroll direction)
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
     isDraggingRef.current = true;
@@ -74,10 +73,12 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
       }`}
     >
       {/*
-        KEY FIX:
-        - The scroll container uses direction: ltr so scrollLeft=0 ALWAYS shows الكل first
-        - The inner flex container uses direction: rtl for visual Arabic layout
-        - This is the only cross-browser reliable approach
+        CORRECT SOLUTION:
+        - Both scroll container and inner flex use direction: LTR
+        - "الكل" is the first item in array → appears LEFTMOST (scrollLeft=0 shows it first)
+        - scrollLeft=0 ALWAYS shows الكل on ALL browsers and ALL screen sizes
+        - No hacks, no timeouts, no JS scroll manipulation needed
+        - Labels use dir="rtl" for proper Arabic text display
       */}
       <div
         ref={scrollRef}
@@ -89,11 +90,10 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
         onMouseMove={handleMouseMove}
       >
         <div
-          className="flex items-start gap-5 md:gap-8 py-4 md:py-6"
+          className="flex items-start gap-5 md:gap-8 py-4 md:py-6 w-max"
           style={{
-            direction: 'rtl',
-            paddingRight: 'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
             paddingLeft:  'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
+            paddingRight: 'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
           }}
         >
           {filters.map((f) => {
@@ -136,7 +136,9 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
                   )}
                 </div>
 
+                {/* dir="rtl" only on text for correct Arabic rendering */}
                 <span
+                  dir="rtl"
                   className={`text-xs md:text-sm font-bold transition-colors pointer-events-none text-center w-16 md:w-20 whitespace-normal ${
                     isActive ? 'text-brand' : 'text-foreground/70 group-hover:text-brand'
                   }`}
