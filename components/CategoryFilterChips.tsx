@@ -20,84 +20,80 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
 
-  // Mouse Drag to Scroll states
   const scrollRef = useRef<HTMLDivElement>(null);
+  const isDraggingRef = useRef(false);
+  const startXRef = useRef(0);
+  const scrollLeftRef = useRef(0);
   const [isDragging, setIsDragging] = useState(false);
-  const [startX, setStartX] = useState(0);
-  const [scrollLeft, setScrollLeft] = useState(0);
-
-  // Fix: Force scroll to start from the rightmost position in RTL on mount
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollLeft = scrollRef.current.scrollWidth;
-    }
-  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
       if (currentScrollY > 120 && currentScrollY > lastScrollY + 5) {
         setIsVisible(false);
       } else if (currentScrollY < lastScrollY - 5 || currentScrollY < 50) {
         setIsVisible(true);
       }
-      
       setLastScrollY(currentScrollY);
     };
-
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [lastScrollY]);
 
-  // Mouse Drag Handlers
+  // Mouse Drag Handlers (LTR scroll direction)
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!scrollRef.current) return;
+    isDraggingRef.current = true;
     setIsDragging(true);
-    setStartX(e.pageX - scrollRef.current.offsetLeft);
-    setScrollLeft(scrollRef.current.scrollLeft);
+    startXRef.current = e.pageX - scrollRef.current.offsetLeft;
+    scrollLeftRef.current = scrollRef.current.scrollLeft;
   };
 
   const handleMouseLeave = () => {
+    isDraggingRef.current = false;
     setIsDragging(false);
   };
 
   const handleMouseUp = () => {
+    isDraggingRef.current = false;
     setIsDragging(false);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!isDragging || !scrollRef.current) return;
+    if (!isDraggingRef.current || !scrollRef.current) return;
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
-    const walk = (x - startX) * 2; // Scroll speed multiplier
-    scrollRef.current.scrollLeft = scrollLeft - walk;
-  };
-
-  const handleDragStart = (e: React.DragEvent) => {
-    e.preventDefault(); // Prevent default link/image dragging while scrolling
+    const walk = (x - startXRef.current) * 2;
+    scrollRef.current.scrollLeft = scrollLeftRef.current - walk;
   };
 
   return (
-    <div 
+    <div
       className={`sticky z-40 transition-all duration-500 ease-in-out bg-surface/95 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.03)] border-b border-black/5 ${
         isVisible ? 'top-14 md:top-[68px]' : '-top-[200px]'
       }`}
-      dir="rtl"
     >
-      <div 
+      {/*
+        KEY FIX:
+        - The scroll container uses direction: ltr so scrollLeft=0 ALWAYS shows الكل first
+        - The inner flex container uses direction: rtl for visual Arabic layout
+        - This is the only cross-browser reliable approach
+      */}
+      <div
         ref={scrollRef}
         className="w-full overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing"
+        style={{ direction: 'ltr' }}
         onMouseDown={handleMouseDown}
         onMouseLeave={handleMouseLeave}
         onMouseUp={handleMouseUp}
         onMouseMove={handleMouseMove}
       >
-        <div 
-          className="flex w-max gap-5 md:gap-8 py-4 md:py-6 items-start"
-          style={{ 
-            paddingRight: 'max(1rem, calc((100vw - 80rem) / 2))',
-            paddingLeft: 'max(1rem, calc((100vw - 80rem) / 2))' 
+        <div
+          className="flex items-start gap-5 md:gap-8 py-4 md:py-6"
+          style={{
+            direction: 'rtl',
+            paddingRight: 'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
+            paddingLeft:  'max(1rem, calc((100vw - 80rem) / 2 + 1rem))',
           }}
         >
           {filters.map((f) => {
@@ -110,12 +106,12 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
                 key={f.href}
                 href={f.href}
                 className="flex flex-col items-center gap-2 group shrink-0"
-                onDragStart={handleDragStart}
+                draggable={false}
                 onClick={(e) => {
                   if (isDragging) e.preventDefault();
                 }}
               >
-                <div 
+                <div
                   className={`relative w-16 h-16 md:w-20 md:h-20 rounded-full flex items-center justify-center overflow-hidden border-[3px] transition-all duration-300 pointer-events-none ${
                     isActive
                       ? 'border-brand shadow-[0_0_15px_rgba(32,37,34,0.1)] scale-105'
@@ -132,11 +128,15 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
                       draggable={false}
                     />
                   ) : (
-                    <LayoutGrid className={`w-6 h-6 md:w-8 md:h-8 ${isActive ? 'text-brand' : 'text-foreground/40 group-hover:text-brand'} transition-all`} />
+                    <LayoutGrid
+                      className={`w-6 h-6 md:w-8 md:h-8 transition-all ${
+                        isActive ? 'text-brand' : 'text-foreground/40 group-hover:text-brand'
+                      }`}
+                    />
                   )}
                 </div>
-                
-                <span 
+
+                <span
                   className={`text-xs md:text-sm font-bold transition-colors pointer-events-none text-center w-16 md:w-20 whitespace-normal ${
                     isActive ? 'text-brand' : 'text-foreground/70 group-hover:text-brand'
                   }`}
