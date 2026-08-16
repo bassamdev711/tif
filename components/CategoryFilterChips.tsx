@@ -81,13 +81,13 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
       <div className="w-full max-w-7xl mx-auto px-4 md:px-6">
         <div 
           ref={scrollRef}
-          className="flex overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing gap-5 md:gap-8 pb-4 pt-1 w-full"
+          className="overflow-x-auto no-scrollbar cursor-grab active:cursor-grabbing w-full whitespace-nowrap text-right pb-4 pt-1"
           onMouseDown={handleMouseDown}
           onMouseLeave={handleMouseLeave}
           onMouseUp={handleMouseUp}
           onMouseMove={handleMouseMove}
         >
-          {filters.map((f) => {
+          {filters.map((f, index) => {
             const isActive = f.href === '/products'
               ? !activeCollection
               : activeCollection === new URLSearchParams(f.href.split('?')[1]).get('collection');
@@ -96,7 +96,9 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
               <Link
                 key={f.href}
                 href={f.href}
-                className="flex flex-col items-center gap-2 group shrink-0"
+                className={`inline-flex flex-col items-center gap-2 group align-top ${
+                  index !== filters.length - 1 ? 'ml-5 md:ml-8' : ''
+                }`}
                 onDragStart={handleDragStart}
                 onClick={(e) => {
                   if (isDragging) e.preventDefault();
@@ -124,7 +126,7 @@ export default function CategoryFilterChips({ filters, activeCollection }: Categ
                 </div>
                 
                 <span 
-                  className={`text-xs md:text-sm font-bold transition-colors pointer-events-none ${
+                  className={`text-xs md:text-sm font-bold transition-colors pointer-events-none whitespace-normal text-center w-16 md:w-20 ${
                     isActive ? 'text-brand' : 'text-foreground/70 group-hover:text-brand'
                   }`}
                 >
