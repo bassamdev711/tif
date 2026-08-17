@@ -2,7 +2,57 @@
 
 import prisma from '@/lib/prisma'
 import { verifyAdmin } from '@/lib/auth'
-import { getUsageSummary, bytesToJSON } from '@/lib/usage'
+import { getDatabaseBytes, getUsageSummary, bytesToJSON } from '@/lib/usage'
+
+const LEGACY_MB = 1024 * 1024
+const LEGACY_GB = 1024 * LEGACY_MB
+
+async function getLegacyUsageSummary(pageViews: number) {
+  const database = await getDatabaseBytes()
+  const estimatedBandwidthBytes = Math.max(0, Math.round(pageViews * 0.002 * LEGACY_GB))
+
+  return {
+    fallback: true as const,
+    subscription: {
+      status: 'ACTIVE',
+      startedAt: new Date(0),
+      renewsAt: null,
+      graceUntil: null,
+      notes: 'عرض توافق قديم؛ سيتم تفعيل القياس التفصيلي بعد تطبيق ترحيل usage.',
+    },
+    plan: {
+      id: 'legacy-free',
+      name: 'الخطة الأساسية',
+      slug: 'legacy-free',
+      price: '0',
+      currencyCode: 'USD',
+    },
+    resources: [
+      {
+        resource: 'database' as const,
+        usedBytes: database.bytes,
+        limitBytes: BigInt(512) * BigInt(LEGACY_MB),
+        source: database.source,
+        confidence: database.confidence,
+      },
+      {
+        resource: 'blob' as const,
+        usedBytes: BigInt(0),
+        limitBytes: BigInt(LEGACY_GB),
+        source: 'legacy-fallback',
+        confidence: 'fallback',
+      },
+      {
+        resource: 'bandwidth' as const,
+        usedBytes: BigInt(estimatedBandwidthBytes),
+        limitBytes: BigInt(100) * BigInt(LEGACY_GB),
+        source: 'estimated-from-pageviews',
+        confidence: 'estimated',
+      },
+    ],
+    availablePlans: [],
+  }
+}
 
 export async function saveManualSubscription(input: {
   planId: string
@@ -142,7 +192,7 @@ export async function getAnalyticsData() {
     today.setHours(0, 0, 0, 0)
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
 
-    const [todayStats, monthStats, totalStats, usage, contact] = await Promise.all([
+    const [todayStats, monthStats, totalStats, contact] = await Promise.all([
       prisma.dailyStats.findUnique({ where: { date: today } }),
       prisma.dailyStats.aggregate({
         where: { date: { gte: startOfMonth } },
@@ -151,9 +201,16 @@ export async function getAnalyticsData() {
       prisma.dailyStats.aggregate({
         _sum: { visitorsCount: true, pageViews: true },
       }),
-      getUsageSummary(),
       prisma.contactSettings.findUnique({ where: { id: 'singleton' } }),
     ])
+
+    let usage
+    try {
+      usage = await getUsageSummary()
+    } catch (usageError) {
+      console.error('Usage summary unavailable; using legacy fallback:', usageError)
+      usage = await getLegacyUsageSummary(monthStats._sum.pageViews || 0)
+    }
 
     return {
       success: true as const,
@@ -164,6 +221,7 @@ export async function getAnalyticsData() {
         total: totalStats._sum.visitorsCount || 0,
       },
       usage: {
+        fallback: 'fallback' in usage && usage.fallback,
         subscription: { ...usage.subscription, planId: usage.plan.id },
         plan: usage.plan,
         resources: usage.resources.map((resource) => ({
