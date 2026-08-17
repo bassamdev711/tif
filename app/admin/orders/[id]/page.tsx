@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma'
 import Link from 'next/link'
 import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowRight, MapPin, Phone, CreditCard, Receipt, CheckCircle2, Truck, CheckCircle } from 'lucide-react'
+import { ArrowRight, MapPin, CreditCard, Receipt } from 'lucide-react'
 import OrderActionsClient from './OrderActionsClient'
 import { getCurrency } from '@/lib/currency'
 import { getOrderConfirmedMessage, getOrderShippedMessage, getOrderCompletedMessage } from '@/lib/whatsapp/templates'
@@ -145,10 +145,10 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                   <Receipt size={16} className="text-brand" />
                   إثبات الدفع
                 </h3>
-                <a href={order.paymentProofUrl} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-md overflow-hidden border border-gray-200 group">
+                <a href={`/api/admin/orders/${order.id}/payment-proof`} target="_blank" rel="noopener noreferrer" className="block relative h-40 w-full rounded-md overflow-hidden border border-gray-200 group">
                   <Image 
-                    src={order.paymentProofUrl} 
-                    alt="Payment Proof" 
+                    src={`/api/admin/orders/${order.id}/payment-proof`}
+                    alt="إيصال الدفع"
                     fill 
                     className="object-cover group-hover:scale-105 transition-transform duration-300" 
                   />
@@ -157,7 +157,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                   </div>
                 </a>
               </div>
-            ) : (order.paymentMethod === 'bank_transfer' || order.paymentMethod === 'wallet') ? (
+            ) : (order.paymentMethod === 'bank_transfer' || order.paymentMethod === 'wallets') ? (
               <div className="mt-6">
                 <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
                   <Receipt size={16} className="text-gray-400" />

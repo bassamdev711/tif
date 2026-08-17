@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from 'react'
+import React, { startTransition, useState } from 'react'
 import { motion } from "framer-motion";
 
 import { Star, PenLine, ChevronRight, ChevronLeft } from "lucide-react";
@@ -35,16 +35,22 @@ export default function TestimonialsClient({
       if (stored) {
         const parsed = JSON.parse(stored) as Review[]
         const notApprovedYet = parsed.filter(pr => !reviews.some(sr => sr.id === pr.id))
-        setLocalReviews([...notApprovedYet, ...reviews])
+        startTransition(() => {
+          setLocalReviews([...notApprovedYet, ...reviews])
+        })
         
         if (notApprovedYet.length !== parsed.length) {
             localStorage.setItem('my_pending_reviews', JSON.stringify(notApprovedYet))
         }
       } else {
-        setLocalReviews(reviews)
+        startTransition(() => {
+          setLocalReviews(reviews)
+        })
       }
-    } catch(e) {
-      setLocalReviews(reviews)
+    } catch {
+      startTransition(() => {
+        setLocalReviews(reviews)
+      })
     }
   }, [reviews])
 
@@ -55,7 +61,7 @@ export default function TestimonialsClient({
       const parsed = stored ? JSON.parse(stored) : []
       parsed.push(newReview)
       localStorage.setItem('my_pending_reviews', JSON.stringify(parsed))
-    } catch(e) {}
+    } catch {}
     setShowForm(false)
   }
 
@@ -116,7 +122,7 @@ export default function TestimonialsClient({
               className="bg-surface p-8 md:p-10 shadow-sm border border-black/5 flex flex-col justify-between"
             >
               <div>
-                <div className="text-accent text-2xl mb-6">"</div>
+                <div className="text-accent text-2xl mb-6">&quot;</div>
                 <div className="flex text-accent mb-4">
                   {[...Array(5)].map((_, index) => (
                     <Star key={index} size={16} fill={index < review.rating ? "currentColor" : "none"} strokeWidth={1.5} />

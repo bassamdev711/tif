@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { startTransition, useRef, useState, useEffect } from 'react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { QrCode, Download, Loader2 } from 'lucide-react'
@@ -15,31 +15,6 @@ export default function CampaignQRCode({ url, logoUrl }: CampaignQRCodeProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // Generate QR whenever color changes
-  useEffect(() => {
-    generateQr()
-  }, [qrColor, url, logoUrl])
-
-  const generateQr = async () => {
-    if (!url) return
-    setLoading(true)
-    try {
-      // 1. Generate base QR as data URL with selected color
-      const baseDataUrl = await QRCode.toDataURL(url, {
-        width: 800,
-        margin: 2,
-        color: { dark: qrColor, light: '#FFFFFF' },
-        errorCorrectionLevel: 'H', // High error correction so logo doesn't break it
-      })
-
-      // 2. Composite logo on top using Canvas
-      const finalDataUrl = await overlayLogoOnQr(baseDataUrl, logoUrl, qrColor)
-      setQrDataUrl(finalDataUrl)
-    } catch (e) {
-      console.error('QR generation failed', e)
-    }
-    setLoading(false)
-  }
 
   const overlayLogoOnQr = (baseQr: string, logoSrc: string | null | undefined, color: string): Promise<string> => {
     return new Promise((resolve) => {
@@ -128,6 +103,35 @@ export default function CampaignQRCode({ url, logoUrl }: CampaignQRCodeProps) {
       qrImg.src = baseQr
     })
   }
+
+  const overlayLogoOnQrRef = useRef(overlayLogoOnQr)
+
+  // Generate QR whenever the campaign URL, logo, or color changes.
+  useEffect(() => {
+    if (!url) return
+
+    const generateQr = async () => {
+      setLoading(true)
+      try {
+        const baseDataUrl = await QRCode.toDataURL(url, {
+          width: 800,
+          margin: 2,
+          color: { dark: qrColor, light: '#FFFFFF' },
+          errorCorrectionLevel: 'H',
+        })
+        const finalDataUrl = await overlayLogoOnQrRef.current(baseDataUrl, logoUrl, qrColor)
+        setQrDataUrl(finalDataUrl)
+      } catch (error) {
+        console.error('QR generation failed', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    startTransition(() => {
+      void generateQr()
+    })
+  }, [qrColor, url, logoUrl])
 
   const handleDownloadQr = () => {
     if (!qrDataUrl) return

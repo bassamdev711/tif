@@ -5,6 +5,17 @@ import { ArrowLeft, Search, Filter } from 'lucide-react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import { getCurrency } from '@/lib/currency'
+import { Prisma } from '@prisma/client'
+
+type SearchProduct = {
+  id: string
+  name: string
+  slug: string
+  price: Prisma.Decimal
+  compareAtPrice: Prisma.Decimal | null
+  imageUrl: string | null
+  category: string | null
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -17,7 +28,7 @@ export default async function SearchPage({
 
   const query = searchParams.q || ''
   
-  let products: any[] = []
+  let products: SearchProduct[] = []
   
   if (query) {
     products = await prisma.product.findMany({
@@ -111,7 +122,7 @@ export default async function SearchPage({
             <Filter className="w-16 h-16 text-foreground/20 mb-6" />
             <h2 className="text-2xl font-bold text-foreground mb-3">لم نجد أي نتائج!</h2>
             <p className="text-foreground/60 text-center max-w-md mb-8">
-              لم نتمكن من العثور على أي منتج يطابق "{query}". يرجى التأكد من الكلمات المستخدمة أو تجربة كلمات أخرى.
+              لم نتمكن من العثور على أي منتج يطابق &quot;{query}&quot;. يرجى التأكد من الكلمات المستخدمة أو تجربة كلمات أخرى.
             </p>
             <Link 
               href="/products"

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { Plus, Megaphone, Trash2, Calendar, Tag } from 'lucide-react'
@@ -5,8 +6,19 @@ import { deleteCampaign, toggleCampaign } from './actions'
 
 export const metadata = { title: 'الحملات التسويقية | TIF Admin' }
 
+type Campaign = {
+  id: string
+  title: string
+  description: string | null
+  imageUrl: string | null
+  couponCode: string | null
+  startDate: Date
+  endDate: Date
+  isActive: boolean
+}
+
 export default async function CampaignsPage() {
-  let campaigns: any[] = []
+  let campaigns: Campaign[] = []
   try {
     campaigns = await prisma.campaign.findMany({ orderBy: { createdAt: 'desc' } })
   } catch {
@@ -62,8 +74,8 @@ export default async function CampaignsPage() {
               <div key={c.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                 {/* Image */}
                 {c.imageUrl && (
-                  <div className="w-full h-32 overflow-hidden">
-                    <img src={c.imageUrl} alt={c.title} className="w-full h-full object-cover" />
+                  <div className="relative w-full h-32 overflow-hidden">
+                    <Image src={c.imageUrl} alt={c.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover" />
                   </div>
                 )}
                 <div className="p-5 space-y-3">

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ success: true })
-  } catch (error) {
+  } catch {
     // If product doesn't exist, Prisma will throw — swallow silently for tracking
     return NextResponse.json({ success: false }, { status: 200 })
   }

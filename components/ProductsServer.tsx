@@ -1,6 +1,33 @@
 import prisma from '@/lib/prisma'
 import ProductsClient from './ProductsClient'
 import { getCurrency } from '@/lib/currency'
+import { Prisma } from '@prisma/client'
+
+type ProductVariantRecord = {
+  id: string
+  size: string | null
+  price: Prisma.Decimal
+  compareAtPrice: Prisma.Decimal | null
+  stock: number
+}
+
+type ProductRecord = {
+  id: string
+  slug: string
+  name: string
+  brand: string | null
+  description: string | null
+  price: Prisma.Decimal
+  compareAtPrice: Prisma.Decimal | null
+  sku: string | null
+  category: string | null
+  size: string | null
+  gender: string | null
+  imageUrl: string | null
+  images: string[]
+  stock: number
+  variants: ProductVariantRecord[]
+}
 
 export const revalidate = 3600 // Cache for 1 hour to boost speed
 
@@ -12,11 +39,11 @@ interface ProductsServerProps {
 
 export default async function ProductsServer({ type, title, subtitle }: ProductsServerProps) {
   const currency = await getCurrency()
-  let products: any[] = []
+  let products: ProductRecord[] = []
   
   try {
-    let whereClause: any = { isActive: true, stock: { gt: 0 } }
-    let orderByClause: any = { createdAt: 'desc' }
+    const whereClause: Prisma.ProductWhereInput = { isActive: true, stock: { gt: 0 } }
+    const orderByClause: Prisma.ProductOrderByWithRelationInput = { createdAt: 'desc' }
 
     if (type === 'featured') {
       whereClause.featured = true
@@ -62,7 +89,7 @@ export default async function ProductsServer({ type, title, subtitle }: Products
     })
 
     if (type === 'offers') {
-      fetchedProducts = fetchedProducts.filter((p: any) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price))
+      fetchedProducts = fetchedProducts.filter((p: ProductRecord) => p.compareAtPrice && Number(p.compareAtPrice) > Number(p.price))
       fetchedProducts = fetchedProducts.slice(0, 8) // Take top 8
     }
 
@@ -90,9 +117,9 @@ export default async function ProductsServer({ type, title, subtitle }: Products
     images: p.images || [],
     stock: p.stock ?? 0,
     slug: p.slug,
-    variants: (p.variants || []).map((v: any) => ({
+    variants: (p.variants || []).map((v) => ({
       id: v.id,
-      size: v.size,
+      size: v.size || '',
       price: Number(v.price),
       compareAtPrice: v.compareAtPrice ? Number(v.compareAtPrice) : null,
       stock: v.stock,

@@ -13,6 +13,6 @@ export default async function AdminHomepageContentPage() {
   const { data: settings } = await getHomepageSettings()
 
   return (
-    <HomepageContentClient initialData={settings} />
+    <HomepageContentClient initialData={settings ?? null} />
   )
 }

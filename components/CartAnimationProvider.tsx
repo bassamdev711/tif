@@ -2,12 +2,6 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode, useRef } from 'react'
 
-interface FlyingItem {
-  id: string
-  startX: number
-  startY: number
-}
-
 interface CartAnimationContextType {
   flyToCart: (buttonEl: HTMLElement) => void
   cartIconRef: React.RefObject<HTMLDivElement | null>
@@ -23,10 +17,7 @@ export function useCartAnimation() {
   return ctx
 }
 
-let flyId = 0
-
 export function CartAnimationProvider({ children }: { children: ReactNode }) {
-  const [flyingItems, setFlyingItems] = useState<FlyingItem[]>([])
   const [triggerBounce, setTriggerBounce] = useState(false)
   const cartIconRef = useRef<HTMLDivElement | null>(null)
 
@@ -41,8 +32,6 @@ export function CartAnimationProvider({ children }: { children: ReactNode }) {
     const startY = btnRect.top + btnRect.height / 2
     const endX = cartRect.left + cartRect.width / 2
     const endY = cartRect.top + cartRect.height / 2
-
-    const id = `fly-${flyId++}`
 
     // Create the flying element
     const el = document.createElement('div')
@@ -84,10 +73,6 @@ export function CartAnimationProvider({ children }: { children: ReactNode }) {
       setTriggerBounce(true)
     }
 
-    setFlyingItems(prev => [...prev, { id, startX, startY }])
-    setTimeout(() => {
-      setFlyingItems(prev => prev.filter(f => f.id !== id))
-    }, duration + 100)
   }, [])
 
   const onBounceComplete = useCallback(() => {

@@ -4,11 +4,12 @@ import { verifyAdmin } from '@/lib/auth'
 
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { Prisma } from '@prisma/client'
 
 export async function getOrders(statusFilter?: string, timeFilter?: string, search?: string) {
   await verifyAdmin();
 
-  let whereClause: any = {}
+  const whereClause: Prisma.OrderWhereInput = {}
 
   if (statusFilter && statusFilter !== 'الكل') {
     if (statusFilter === 'جديد') whereClause.status = 'NEW'
@@ -147,7 +148,7 @@ export async function updatePaymentStatus(orderId: string, paymentStatus: string
     })
     revalidatePath('/admin/orders')
     return { success: true }
-  } catch (error) {
+  } catch {
     return { success: false, error: 'Failed to update payment status' }
   }
 }

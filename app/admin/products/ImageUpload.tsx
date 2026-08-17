@@ -54,8 +54,8 @@ export default function ImageUpload({
     try {
       const url = await uploadFile(file)
       onMainImageChange(url)
-    } catch (err: any) {
-      alert(err.message)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'فشل رفع الصورة')
     } finally {
       setUploadingMain(false)
     }
@@ -72,8 +72,8 @@ export default function ImageUpload({
     try {
       const urls = await Promise.all(files.map(uploadFile))
       if (onAdditionalImagesChange) onAdditionalImagesChange([...additionalImages, ...urls])
-    } catch (err: any) {
-      alert(err.message)
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'فشل رفع الصورة')
     } finally {
       setUploadingExtra(false)
     }

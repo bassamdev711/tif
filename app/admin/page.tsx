@@ -1,6 +1,34 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Package, ShoppingCart, TrendingUp, AlertTriangle, ArrowLeft, Clock, CheckCircle, Users, Eye, ShoppingBag, CreditCard } from 'lucide-react'
 import prisma from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+
+type DashboardOrder = {
+  id: string
+  orderNumber: string | null
+  customerName: string
+  totalAmount: Prisma.Decimal
+  status: string
+  createdAt: Date
+}
+
+type StockProduct = {
+  id: string
+  name: string
+  stock: number
+  slug: string
+  imageUrl: string | null
+}
+
+type RankedProduct = {
+  id: string
+  name: string
+  imageUrl: string | null
+  viewsCount?: number
+  addToCartCount?: number
+  salesCount?: number
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -9,16 +37,16 @@ export default async function AdminDashboard() {
   let totalOrders = 0;
   let newOrdersCount = 0;
   let totalRevenue = 0;
-  let recentOrders: any[] = [];
-  let lowStockProducts: any[] = [];
-  let outOfStockProducts: any[] = [];
+  let recentOrders: DashboardOrder[] = [];
+  let lowStockProducts: StockProduct[] = [];
+  let outOfStockProducts: StockProduct[] = [];
   
   // Analytics
   let totalVisitors = 0;
   let totalPageViews = 0;
-  let mostViewedProducts: any[] = [];
-  let mostAddedToCartProducts: any[] = [];
-  let mostPurchasedProducts: any[] = [];
+  let mostViewedProducts: RankedProduct[] = [];
+  let mostAddedToCartProducts: RankedProduct[] = [];
+  let mostPurchasedProducts: RankedProduct[] = [];
   
   try {
     // 1. Fetch KPI Counts
@@ -241,7 +269,7 @@ export default async function AdminDashboard() {
                 {mostViewedProducts.map((p, i) => (
                   <li key={p.id} className="flex items-center gap-3">
                     <span className="font-black text-gray-300 w-4 text-center">{i + 1}</span>
-                    {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="w-10 h-10 rounded object-cover" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
+                    {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} width={40} height={40} className="w-10 h-10 rounded object-cover" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
                     <div className="flex-1 truncate">
                       <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
                       <p className="text-xs text-gray-500">{p.viewsCount} مشاهدة</p>
@@ -265,7 +293,7 @@ export default async function AdminDashboard() {
                 {mostAddedToCartProducts.map((p, i) => (
                   <li key={p.id} className="flex items-center gap-3">
                     <span className="font-black text-gray-300 w-4 text-center">{i + 1}</span>
-                    {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="w-10 h-10 rounded object-cover" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
+                    {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} width={40} height={40} className="w-10 h-10 rounded object-cover" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
                     <div className="flex-1 truncate">
                       <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
                       <p className="text-xs text-gray-500">{p.addToCartCount} مرة</p>
@@ -289,7 +317,7 @@ export default async function AdminDashboard() {
                 {mostPurchasedProducts.map((p, i) => (
                   <li key={p.id} className="flex items-center gap-3">
                     <span className="font-black text-gray-300 w-4 text-center">{i + 1}</span>
-                    {p.imageUrl ? <img src={p.imageUrl} alt={p.name} className="w-10 h-10 rounded object-cover" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
+                    {p.imageUrl ? <Image src={p.imageUrl} alt={p.name} width={40} height={40} className="w-10 h-10 rounded object-cover" /> : <div className="w-10 h-10 rounded bg-gray-100" />}
                     <div className="flex-1 truncate">
                       <p className="text-sm font-bold text-gray-900 truncate">{p.name}</p>
                       <p className="text-xs text-gray-500">{p.salesCount} مرة</p>
@@ -381,7 +409,7 @@ export default async function AdminDashboard() {
                     <li key={product.id} className="flex items-center justify-between p-3 rounded-lg border border-red-200 bg-red-50/50">
                       <div className="flex items-center gap-3 overflow-hidden">
                         {product.imageUrl ? (
-                          <img src={product.imageUrl} alt={product.name} className="w-10 h-10 rounded-md object-cover flex-shrink-0 grayscale opacity-70" />
+                          <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="w-10 h-10 rounded-md object-cover flex-shrink-0 grayscale opacity-70" />
                         ) : (
                           <div className="w-10 h-10 rounded-md bg-gray-200 flex-shrink-0 flex items-center justify-center">
                             <Package className="w-5 h-5 text-gray-400" />
@@ -416,7 +444,7 @@ export default async function AdminDashboard() {
                     <li key={product.id} className="flex items-center justify-between p-3 rounded-lg border border-amber-200 bg-amber-50/30">
                       <div className="flex items-center gap-3 overflow-hidden">
                         {product.imageUrl ? (
-                          <img src={product.imageUrl} alt={product.name} className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
+                          <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="w-10 h-10 rounded-md object-cover flex-shrink-0" />
                         ) : (
                           <div className="w-10 h-10 rounded-md bg-gray-200 flex-shrink-0 flex items-center justify-center">
                             <Package className="w-5 h-5 text-gray-400" />

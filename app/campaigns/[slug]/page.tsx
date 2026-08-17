@@ -64,7 +64,7 @@ export default async function CampaignPage({ params }: { params: Promise<{ slug:
       images: p.images || [],
       stock: p.stock ?? 0,
       slug: p.slug,
-      variants: (p.variants || []).map((v: any) => {
+      variants: (p.variants || []).map((v) => {
         const vRaw = Number(v.price)
         const vDiscounted = applyDiscount(vRaw)
         return {

@@ -60,7 +60,7 @@ export async function addReview(data: {
 
 export async function getReviews(productId?: string) {
   try {
-    const whereClause: any = { status: 'APPROVED' }
+    const whereClause: { status: 'APPROVED'; productId?: string; isGlobal?: boolean } = { status: 'APPROVED' }
     
     if (productId) {
       whereClause.productId = productId

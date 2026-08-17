@@ -1,12 +1,21 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { startTransition, useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, X, Loader2, ArrowLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useCurrency } from '@/components/CurrencyProvider'
+
+type SearchProduct = {
+  id: string
+  slug: string
+  name: string
+  imageUrl: string | null
+  price: number
+  compareAtPrice: number | null
+}
 
 interface SearchModalProps {
   isOpen: boolean
@@ -17,7 +26,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
   const currency = useCurrency()
 
   const [query, setQuery] = useState('')
-  const [results, setResults] = useState<any[]>([])
+  const [results, setResults] = useState<SearchProduct[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -28,8 +37,10 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
-      setQuery('')
-      setResults([])
+      startTransition(() => {
+        setQuery('')
+        setResults([])
+      })
     }
     return () => { document.body.style.overflow = 'unset' }
   }, [isOpen])
@@ -145,14 +156,14 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                     {results.length === 8 && (
                       <div className="mt-6 text-center">
                         <button type="submit" onClick={handleSearchSubmit} className="text-brand font-bold hover:underline inline-flex items-center gap-1">
-                          عرض جميع النتائج لـ "{query}" <ArrowLeft className="w-4 h-4" />
+                          عرض جميع النتائج لـ &quot;{query}&quot; <ArrowLeft className="w-4 h-4" />
                         </button>
                       </div>
                     )}
                   </div>
                 ) : query && results.length === 0 ? (
                   <div className="flex flex-col items-center justify-center h-40 text-center px-4">
-                    <p className="text-lg font-bold text-foreground mb-2">لم نجد نتائج مطابقة لـ "{query}"</p>
+                    <p className="text-lg font-bold text-foreground mb-2">لم نجد نتائج مطابقة لـ &quot;{query}&quot;</p>
                     <p className="text-sm text-foreground/60">حاول استخدام كلمات مختلفة أو تصفح مجموعاتنا.</p>
                   </div>
                 ) : (

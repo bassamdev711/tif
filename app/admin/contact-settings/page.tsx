@@ -7,7 +7,7 @@ export const metadata = {
 
 export default async function ContactSettingsPage() {
   const result = await getContactSettings()
-  const initialData = result.success ? result.data : null
+  const initialData = result.success ? result.data ?? null : null
 
-  return <ContactSettingsClient initialData={initialData as any} />
+  return <ContactSettingsClient initialData={initialData} />
 }

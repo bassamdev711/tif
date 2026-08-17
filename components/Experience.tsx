@@ -4,7 +4,16 @@ import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 
-export default function Experience({ data = {} }: { data?: any }) {
+type ExperienceData = {
+  expTopTitle?: string | null
+  expMainTitle?: string | null
+  expBox1Title?: string | null
+  expBox1Desc?: string | null
+  expBox2Title?: string | null
+  expBox2Desc?: string | null
+}
+
+export default function Experience({ data = {} }: { data?: ExperienceData }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,

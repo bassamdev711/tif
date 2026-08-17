@@ -4,17 +4,30 @@ import { useToast } from '@/components/ToastProvider'
 import React, { useState } from 'react'
 import {
   Download, ShoppingBag, Clock,
-  PackageOpen, Truck, Search, X,
-  CheckCircle, XCircle, Eye, Phone,
-  MapPin, CreditCard, Package, ChevronRight,
-  AlertCircle, Loader2
+  PackageOpen, Truck, Search,
+  Eye,
 } from 'lucide-react'
-import { updateOrderStatus, updatePaymentStatus, deleteOrder } from './actions'
 import { format } from 'date-fns'
-import { ar } from 'date-fns/locale'
 import Link from 'next/link'
 
-const ORDER_STATUSES = ['NEW', 'PROCESSING', 'SHIPPED', 'COMPLETED'] as const
+
+type OrderRow = {
+  id: string
+  orderNumber: string | null
+  customerName: string
+  customerPhone: string
+  status: string
+  paymentStatus: string
+  totalAmount: number
+  createdAt: string | Date
+}
+
+type OrderStats = {
+  total: number
+  pendingPayment: number
+  processing: number
+  shipped: number
+}
 
 const STATUS_LABEL: Record<string, string> = {
   NEW: 'جديد',
@@ -31,11 +44,6 @@ const PAYMENT_STATUS_LABEL: Record<string, string> = {
   FAILED: 'فشل',
 }
 
-const PAYMENT_METHOD_LABEL: Record<string, string> = {
-  bank_transfer: 'تحويل بنكي',
-  wallet: 'محفظة إلكترونية',
-  cash_on_delivery: 'دفع عند الاستلام',
-}
 
 function PaymentBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -66,45 +74,13 @@ function OrderBadge({ status }: { status: string }) {
   )
 }
 
-function StatusProgress({ status }: { status: string }) {
-  if (status === 'CANCELLED') {
-    return (
-      <div className="flex items-center gap-2 text-red-600 font-bold text-sm">
-        <XCircle size={18} /> الطلب ملغى
-      </div>
-    )
-  }
-  const currentIdx = ORDER_STATUSES.indexOf(status as any)
-  return (
-    <div className="flex items-center gap-1 w-full">
-      {ORDER_STATUSES.map((s, i) => {
-        const done = i <= currentIdx
-        return (
-          <React.Fragment key={s}>
-            <div className="flex flex-col items-center flex-1 min-w-0">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${done ? 'bg-brand text-white' : 'bg-gray-200 text-gray-400'}`}>
-                {done ? <CheckCircle size={14} /> : i + 1}
-              </div>
-              <span className={`text-[10px] mt-1 font-bold text-center leading-tight ${done ? 'text-brand-700' : 'text-gray-400'}`}>
-                {STATUS_LABEL[s]}
-              </span>
-            </div>
-            {i < ORDER_STATUSES.length - 1 && (
-              <div className={`h-0.5 flex-1 mb-5 rounded transition-colors ${i < currentIdx ? 'bg-emerald-500' : 'bg-gray-200'}`} />
-            )}
-          </React.Fragment>
-        )
-      })}
-    </div>
-  )
-}
 
 
 
 // ─── Main ────────────────────────────────────────────────────────────────────
-export default function OrdersClient({ orders: initialOrders, stats }: { orders: any[]; stats: any }) {
+export default function OrdersClient({ orders: initialOrders, stats }: { orders: OrderRow[]; stats: OrderStats }) {
   const { showToast } = useToast()
-  const [orders, setOrders] = useState<any[]>(initialOrders)
+  const orders = initialOrders
   const [filterStatus, setFilterStatus] = useState('الكل')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -119,13 +95,6 @@ export default function OrdersClient({ orders: initialOrders, stats }: { orders:
     showToast('success', 'تم تصدير الطلبات بنجاح')
   }
 
-  const handleOrderUpdated = (id: string, field: 'status' | 'paymentStatus', value: string) => {
-    setOrders(prev => prev.map(o => o.id === id ? { ...o, [field]: value } : o))
-  }
-
-  const handleOrderDeleted = (id: string) => {
-    setOrders(prev => prev.filter(o => o.id !== id))
-  }
 
   const filtered = orders
     .filter(o => filterStatus === 'الكل' || (filterStatus === 'جديد' && o.status === 'NEW') || (filterStatus === 'قيد التجهيز' && o.status === 'PROCESSING') || (filterStatus === 'مشحون' && o.status === 'SHIPPED') || (filterStatus === 'مكتمل' && o.status === 'COMPLETED') || (filterStatus === 'ملغى' && o.status === 'CANCELLED'))

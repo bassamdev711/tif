@@ -18,7 +18,7 @@ export async function getBrandingSettings() {
       }
     })
     return { success: true, settings }
-  } catch (error) {
+  } catch {
     return { success: false, error: 'فشل في جلب إعدادات الهوية البصرية' }
   }
 }
@@ -85,7 +85,7 @@ export async function saveStoreUrl(url: string) {
     })
 
     return { success: true }
-  } catch (error) {
+  } catch {
     return { success: false, error: 'فشل في حفظ رابط المتجر' }
   }
 }

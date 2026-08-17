@@ -4,14 +4,12 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Home, LayoutGrid, Heart, ShoppingCart, Package } from "lucide-react";
 import { useCart } from "./CartProvider";
-import { useFavorites } from "./FavoritesProvider";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartAnimation } from "./CartAnimationProvider";
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
   const { cartCount } = useCart();
-  const { favoritesCount } = useFavorites();
   const { triggerBounce, onBounceComplete } = useCartAnimation();
 
   const navItems = [

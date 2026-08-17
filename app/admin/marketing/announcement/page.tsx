@@ -3,8 +3,17 @@ import AnnouncementBarClient from './AnnouncementBarClient'
 
 export const metadata = { title: 'شريط الإعلانات | TIF Admin' }
 
+type AnnouncementBar = {
+  message: string
+  linkText: string | null
+  linkUrl: string | null
+  bgColor: string
+  textColor: string
+  isActive: boolean
+}
+
 export default async function AnnouncementBarPage() {
-  let bar: any = null
+  let bar: AnnouncementBar | null = null
   try {
     bar = await prisma.announcementBar.findUnique({ where: { id: 'singleton' } })
   } catch {

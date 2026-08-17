@@ -26,7 +26,7 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
     select: { id: true, name: true, imageUrl: true }
   })
 
-  const selectedProductIds = campaign.products.map(p => p.id)
+  const selectedProductIds = campaign.products.map((p: { id: string }) => p.id)
 
   const startDateLocal = campaign.startDate.toISOString().slice(0, 16)
   const endDateLocal = campaign.endDate.toISOString().slice(0, 16)

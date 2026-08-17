@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { startTransition, useCallback, useState, useEffect } from 'react'
 import { Bell, CheckCircle2, ShieldAlert } from 'lucide-react'
 
 const urlBase64ToUint8Array = (base64String: string) => {
@@ -26,11 +26,7 @@ export default function NotificationsSettings() {
   // Replace with your VAPID public key (can be fetched from an API or env)
   const applicationServerKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
-  useEffect(() => {
-    checkSubscription()
-  }, [])
-
-  const checkSubscription = async () => {
+  const checkSubscription = useCallback(async () => {
     try {
       if (typeof window === 'undefined') return
       
@@ -75,15 +71,19 @@ export default function NotificationsSettings() {
 
       await Promise.race([checkPromise(), timeoutPromise])
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error checking subscription:', err)
-      setError('حدث خطأ أثناء فحص حالة الإشعارات: ' + (err?.message || 'غير معروف'))
+      setError('حدث خطأ أثناء فحص حالة الإشعارات: ' + (err instanceof Error ? err.message : 'غير معروف'))
     } finally {
       setLoading(false)
     }
-  }
+  }, [applicationServerKey])
 
-
+  useEffect(() => {
+    startTransition(() => {
+      void checkSubscription()
+    })
+  }, [checkSubscription])
 
   const handleSubscribe = async () => {
     setLoading(true)
@@ -117,12 +117,12 @@ export default function NotificationsSettings() {
         icon: '/favicon.ico'
       })
       
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Subscription failed:', err)
       if (Notification.permission === 'denied') {
         setError('لقد قمت برفض صلاحية الإشعارات مسبقاً. يرجى تفعيلها من إعدادات المتصفح.')
       } else {
-        setError(err.message || 'فشل تفعيل الإشعارات.')
+        setError(err instanceof Error ? err.message : 'فشل تفعيل الإشعارات.')
       }
     } finally {
       setLoading(false)

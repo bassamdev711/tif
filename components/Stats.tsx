@@ -2,19 +2,46 @@
 
 import { motion } from "framer-motion";
 
-export default function Stats({ data = {} }: { data?: any }) {
-  const stats = data?.statsJson ? JSON.parse(data.statsJson) : [
-    { value: "10K+", label: "عميل يثق بنا", delay: 0.1 },
-    { value: "50+", label: "مكون عطري نادر", delay: 0.2 },
-    { value: "100%", label: "زيوت عطرية نقية", delay: 0.3 },
-    { value: "24h", label: "ثبات العطر", delay: 0.4 },
-  ];
+type StatItem = {
+  value: string
+  label: string
+}
+
+type StatsData = {
+  statsJson?: string | null
+}
+
+const defaultStats: StatItem[] = [
+  { value: "10K+", label: "عميل يثق بنا" },
+  { value: "50+", label: "مكون عطري نادر" },
+  { value: "100%", label: "زيوت عطرية نقية" },
+  { value: "24h", label: "ثبات العطر" },
+]
+
+export default function Stats({ data = {} }: { data?: StatsData }) {
+  let stats = defaultStats
+
+  if (data.statsJson) {
+    try {
+      const parsed: unknown = JSON.parse(data.statsJson)
+      if (Array.isArray(parsed)) {
+        const validStats = parsed.filter((stat): stat is StatItem => {
+          if (!stat || typeof stat !== 'object') return false
+          const candidate = stat as Record<string, unknown>
+          return typeof candidate.value === 'string' && typeof candidate.label === 'string'
+        })
+        if (validStats.length > 0) stats = validStats
+      }
+    } catch {
+      stats = defaultStats
+    }
+  }
 
   return (
     <section className="py-20 bg-brand text-surface border-y border-accent/10">
       <div className="max-w-7xl mx-auto px-6 lg:px-12" dir="rtl">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 divide-x divide-x-reverse divide-surface/10">
-          {stats.map((stat: {value: string, label: string}, index: number) => (
+          {stats.map((stat, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}

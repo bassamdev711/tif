@@ -5,72 +5,87 @@ import { SignJWT } from 'jose'
 import prisma from '@/lib/prisma'
 import { verifyPassword } from '@/lib/hash'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { ADMIN_COOKIE_NAME, ADMIN_JWT_CONFIG, getAdminJwtSecret } from '@/lib/auth'
+
+const LOGIN_DELAY_MS = 750
+
+async function delay() {
+  await new Promise((resolve) => setTimeout(resolve, LOGIN_DELAY_MS))
+}
 
 export async function login(password: string) {
-  const JWT_SECRET = process.env.JWT_SECRET
-  const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD
-
-  // Rate limiting: 5 attempts per 15 minutes per IP
+  const candidate = typeof password === 'string' ? password : ''
   const headersList = await headers()
-  const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+  const ip = headersList.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
 
   if (!checkRateLimit(`login_${ip}`, 5, 15 * 60 * 1000)) {
-    // Consistent delay to prevent timing attacks even on rate-limit response
-    await new Promise(resolve => setTimeout(resolve, 2000))
+    await delay()
     return { success: false, error: 'تم تجاوز الحد المسموح به لمحاولات تسجيل الدخول. يرجى الانتظار 15 دقيقة والمحاولة مجدداً.' }
   }
 
-  if (!JWT_SECRET || !ADMIN_PASSWORD) {
-    throw new Error('CRITICAL: JWT_SECRET or ADMIN_PASSWORD is not set in environment variables.')
+  let secret: Uint8Array
+  try {
+    secret = getAdminJwtSecret()
+  } catch (error) {
+    console.error('Admin login configuration error:', error)
+    return { success: false, error: 'تسجيل الدخول غير متاح حالياً' }
   }
 
+  const adminPassword = process.env.ADMIN_PASSWORD
   let isPasswordValid = false
 
   try {
     const adminProfile = await prisma.adminProfile.findUnique({
-      where: { id: 'singleton' }
+      where: { id: 'singleton' },
+      select: { isSetupComplete: true, passwordHash: true },
     })
 
-    if (adminProfile && adminProfile.isSetupComplete && adminProfile.passwordHash) {
-      // Setup complete — verify against stored hash
-      isPasswordValid = verifyPassword(password, adminProfile.passwordHash)
-    } else {
-      // First login — use env variable password
-      isPasswordValid = (password === ADMIN_PASSWORD)
+    if (adminProfile?.isSetupComplete && adminProfile.passwordHash) {
+      isPasswordValid = verifyPassword(candidate, adminProfile.passwordHash)
+    } else if (process.env.ADMIN_SETUP_ENABLED === 'true' && adminPassword) {
+      // The environment password is permitted only for an explicitly enabled first-time setup.
+      isPasswordValid = candidate === adminPassword
     }
   } catch (error) {
-    console.error("Error verifying admin profile:", error)
-    // Fallback to env password if DB is unavailable
-    isPasswordValid = (password === ADMIN_PASSWORD)
+    // Never fall back to an environment password when the database is unavailable.
+    console.error('Admin profile lookup failed:', error)
+    await delay()
+    return { success: false, error: 'تعذر التحقق من تسجيل الدخول حالياً' }
   }
 
-  if (isPasswordValid) {
-    const secret = new TextEncoder().encode(JWT_SECRET)
+  if (!isPasswordValid) {
+    await delay()
+    return { success: false, error: 'كلمة المرور غير صحيحة' }
+  }
+
+  try {
     const token = await new SignJWT({ role: 'admin' })
-      .setProtectedHeader({ alg: 'HS256' })
+      .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+      .setSubject('admin')
+      .setIssuer(ADMIN_JWT_CONFIG.issuer)
+      .setAudience(ADMIN_JWT_CONFIG.audience)
       .setIssuedAt()
-      .setExpirationTime('8h')  // Reduced from 7d to 8h for security
+      .setJti(crypto.randomUUID())
+      .setExpirationTime('8h')
       .sign(secret)
 
     const cookieStore = await cookies()
-    cookieStore.set('admin_token', token, {
+    cookieStore.set(ADMIN_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',   // Upgraded from 'lax' to 'strict' for admin
-      path: '/',            // Scope cookie to root so /api routes can read it
-      maxAge: 60 * 60 * 8  // 8 hours
+      sameSite: 'strict',
+      path: '/',
+      maxAge: 60 * 60 * 8,
     })
 
     return { success: true }
+  } catch (error) {
+    console.error('Admin session creation failed:', error)
+    return { success: false, error: 'تعذر إنشاء جلسة الإدارة حالياً' }
   }
-
-  // Artificial delay to mitigate brute-force timing attacks
-  await new Promise(resolve => setTimeout(resolve, 2000))
-
-  return { success: false, error: 'كلمة المرور غير صحيحة' }
 }
 
 export async function logout() {
   const cookieStore = await cookies()
-  cookieStore.delete('admin_token')
+  cookieStore.delete(ADMIN_COOKIE_NAME)
 }

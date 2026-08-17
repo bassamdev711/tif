@@ -18,7 +18,7 @@ export async function getCollections() {
   })
 }
 
-export async function createCollection(data: { name: string, slug: string, description: string, isActive: boolean, imageUrl: string }) {
+export async function createCollection(data: { name: string, slug: string, description: string, isActive: boolean, imageUrl: string | null }) {
   await verifyAdmin();
 
   try {
@@ -28,8 +28,8 @@ export async function createCollection(data: { name: string, slug: string, descr
     revalidatePath('/admin/collections')
     revalidatePath('/admin/products')
     return { success: true }
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
       return { success: false, error: 'الرابط الدائم (slug) مستخدم مسبقاً.' }
     }
     return { success: false, error: 'حدث خطأ أثناء إنشاء المجموعة.' }
@@ -44,7 +44,7 @@ export async function deleteCollection(id: string) {
     revalidatePath('/admin/collections')
     revalidatePath('/admin/products')
     return { success: true }
-  } catch (error) {
+  } catch {
     return { success: false, error: 'حدث خطأ أثناء حذف المجموعة.' }
   }
 }
@@ -59,7 +59,7 @@ export async function toggleCollectionStatus(id: string, isActive: boolean) {
     })
     revalidatePath('/admin/collections')
     return { success: true }
-  } catch (error) {
+  } catch {
     return { success: false, error: 'حدث خطأ.' }
   }
 }
@@ -75,8 +75,8 @@ export async function updateCollection(id: string, data: { name: string, slug: s
     revalidatePath('/admin/collections')
     revalidatePath('/admin/products')
     return { success: true }
-  } catch (error: any) {
-    if (error.code === 'P2002') {
+  } catch (error: unknown) {
+    if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'P2002') {
       return { success: false, error: 'الرابط الدائم (slug) مستخدم مسبقاً.' }
     }
     return { success: false, error: 'حدث خطأ أثناء تحديث المجموعة.' }

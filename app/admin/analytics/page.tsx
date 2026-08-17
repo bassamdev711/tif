@@ -2,11 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { getAnalyticsData } from "./actions";
-import { Users, Eye, BarChart, Server, Activity, ArrowUpRight, ArrowDownRight, Settings } from "lucide-react";
-import Link from "next/link";
+import { Users, Eye, BarChart, Server, Activity } from "lucide-react";
+
+type AnalyticsData = {
+  success: true
+  visits: { today: number; todayViews: number; month: number; total: number }
+  usage: { bandwidthGB: number; storageGB: number; isVercelConnected: boolean }
+}
 
 export default function AnalyticsPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

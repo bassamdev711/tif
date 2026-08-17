@@ -1,23 +1,26 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { startTransition, useCallback, useEffect, useState } from 'react'
 import { Trash2, Download, Search } from 'lucide-react'
 import { getSubscribers, deleteSubscriber } from '@/app/actions/newsletter'
 import { useToast } from '@/components/ToastProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
 
+type NewsletterSubscriber = {
+  id: string
+  email: string
+  isActive: boolean
+  createdAt: Date | string
+}
+
 export default function NewsletterAdminPage() {
-  const [subscribers, setSubscribers] = useState<any[]>([])
+  const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const { showToast } = useToast()
   const { confirm } = useConfirm()
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const result = await getSubscribers()
     if (result.success && result.data) {
@@ -26,7 +29,13 @@ export default function NewsletterAdminPage() {
       showToast('error', result.error || 'حدث خطأ أثناء جلب المشتركين')
     }
     setLoading(false)
-  }
+  }, [showToast])
+
+  useEffect(() => {
+    startTransition(() => {
+      void fetchData()
+    })
+  }, [fetchData])
 
   const handleDelete = async (id: string) => {
     if (!(await confirm({ message: 'هل أنت متأكد من حذف هذا المشترك؟', danger: true }))) return

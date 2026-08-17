@@ -1,15 +1,15 @@
-import { put } from '@vercel/blob'
+import { del, put } from '@vercel/blob'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '@/lib/auth'
+import { verifyOrderUploadToken } from '@/lib/order-upload-token'
 import prisma from '@/lib/prisma'
 import { checkRateLimit } from '@/lib/rate-limit'
 import crypto from 'crypto'
 
-// ── حدود الملف ────────────────────────────────────────────────
-const MAX_FILE_SIZE = 4 * 1024 * 1024   // 4MB — رفض مطلق
-const WARN_FILE_SIZE = 2 * 1024 * 1024  // 2MB — تحذير
+export const runtime = 'nodejs'
 
-// ── الأنواع المسموحة بصرامة ──────────────────────────────────
+const MAX_FILE_SIZE = 4 * 1024 * 1024
+const WARN_FILE_SIZE = 2 * 1024 * 1024
 const ALLOWED_MIME_TYPES = new Set([
   'image/jpeg',
   'image/png',
@@ -18,163 +18,142 @@ const ALLOWED_MIME_TYPES = new Set([
   'application/pdf',
 ])
 
-// ── التحقق من Magic Bytes (محتوى الملف الحقيقي) ─────────────
 const MAGIC_BYTES: Record<string, { magic: Buffer; ext: string; mime: string }[]> = {
   'image/jpeg': [{ magic: Buffer.from([0xff, 0xd8, 0xff]), ext: 'jpg', mime: 'image/jpeg' }],
-  'image/png':  [{ magic: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), ext: 'png', mime: 'image/png' }],
+  'image/png': [{ magic: Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), ext: 'png', mime: 'image/png' }],
   'image/webp': [{ magic: Buffer.from([0x52, 0x49, 0x46, 0x46]), ext: 'webp', mime: 'image/webp' }],
   'application/pdf': [{ magic: Buffer.from([0x25, 0x50, 0x44, 0x46]), ext: 'pdf', mime: 'application/pdf' }],
 }
 
 function detectFileType(buffer: Buffer): { ext: string; mime: string } | null {
-  for (const [, signatures] of Object.entries(MAGIC_BYTES)) {
-    for (const sig of signatures) {
-      if (buffer.subarray(0, sig.magic.length).equals(sig.magic)) {
-        // Extra WebP validation: bytes 8-11 must be "WEBP"
-        if (sig.mime === 'image/webp') {
-          const riff = buffer.subarray(0, 4)
-          const webp = buffer.subarray(8, 12)
-          if (!riff.equals(Buffer.from([0x52, 0x49, 0x46, 0x46]))) continue
-          if (webp.toString('ascii') !== 'WEBP') continue
-        }
-        return { ext: sig.ext, mime: sig.mime }
-      }
+  for (const signatures of Object.values(MAGIC_BYTES)) {
+    for (const signature of signatures) {
+      if (!buffer.subarray(0, signature.magic.length).equals(signature.magic)) continue
+      if (signature.mime === 'image/webp' && buffer.subarray(8, 12).toString('ascii') !== 'WEBP') continue
+      return { ext: signature.ext, mime: signature.mime }
     }
   }
   return null
 }
 
-// ── AVIF validation via container check ──────────────────────
 function isAvif(buffer: Buffer): boolean {
-  // AVIF uses ISOBMFF container: ftyp box at byte 4 with 'avif' or 'avis' brand
   if (buffer.length < 12) return false
-  const ftyp = buffer.subarray(4, 8).toString('ascii')
-  const brand = buffer.subarray(8, 12).toString('ascii')
-  return ftyp === 'ftyp' && (brand === 'avif' || brand === 'avis')
+  return buffer.subarray(4, 8).toString('ascii') === 'ftyp' && ['avif', 'avis'].includes(buffer.subarray(8, 12).toString('ascii'))
+}
+
+function getClientIp(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for')?.split(',').map((part) => part.trim()).filter(Boolean)
+  return (forwarded?.at(-1) || request.headers.get('x-real-ip') || 'unknown').slice(0, 64)
 }
 
 export async function POST(request: NextRequest) {
-  // ── تحديد الـ IP ─────────────────────────────────────────
-  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
-
+  const ip = getClientIp(request)
   let isAdmin = false
-  let adminError = ''
+
   try {
-    const token = request.cookies.get('admin_token')?.value
-    await verifyAdmin(token)
+    await verifyAdmin(request.cookies.get('admin_token')?.value)
     isAdmin = true
-  } catch (error: any) {
-    console.error('verifyAdmin failed:', error)
-    adminError = error.message || 'Unknown auth error'
+  } catch {
+    isAdmin = false
   }
 
-  // ── Rate Limiting (غير الأدمن: 10/ساعة — الأدمن: 30/ساعة) ─
-  const limitKey = isAdmin ? `upload_admin_${ip}` : `upload_user_${ip}`
-  const uploadLimit = isAdmin ? 30 : 10
-  if (!checkRateLimit(limitKey, uploadLimit, 60 * 60 * 1000)) {
-    return NextResponse.json(
-      { error: 'تم تجاوز حد رفع الملفات. يرجى المحاولة لاحقاً.' },
-      { status: 429 }
-    )
+  let formData: FormData
+  try {
+    formData = await request.formData()
+  } catch {
+    return NextResponse.json({ error: 'بيانات الرفع غير صالحة' }, { status: 400 })
   }
 
-  // ── قراءة البيانات ────────────────────────────────────────
-  const formData = await request.formData()
-  const file = formData.get('file') as File
-  const orderId = formData.get('orderId') as string | null
-
-  if (!file) {
-    return NextResponse.json({ error: 'لم يتم تحديد ملف' }, { status: 400 })
+  const file = formData.get('file')
+  if (!(file instanceof File)) {
+    return NextResponse.json({ error: 'لم يتم تحديد ملف صالح' }, { status: 400 })
   }
 
-  // ── التحقق من الصلاحية لغير الأدمن ──────────────────────
+  const orderId = typeof formData.get('orderId') === 'string' ? String(formData.get('orderId')).trim() : ''
+  const uploadToken = typeof formData.get('uploadToken') === 'string' ? String(formData.get('uploadToken')).trim() : ''
+  const transactionId = typeof formData.get('transactionId') === 'string' ? String(formData.get('transactionId')).trim().slice(0, 100) : ''
+
   if (!isAdmin) {
-    if (!orderId) {
-      const context = formData.get('context')
-      if (context !== 'checkout') {
-        return NextResponse.json({ error: `غير مصرح لك برفع الملفات (${adminError})` }, { status: 401 })
-      }
-    } else {
-      // التحقق من وجود الطلب وصلاحية حالته
-      const order = await prisma.order.findUnique({ where: { id: orderId } })
-      if (!order || !['AWAITING_PAYMENT', 'PENDING', 'REJECTED'].includes(order.paymentStatus)) {
-        return NextResponse.json({ error: 'غير مصرح برفع الإيصال لهذا الطلب' }, { status: 403 })
-      }
+    if (!orderId || !uploadToken || !(await verifyOrderUploadToken(uploadToken, orderId))) {
+      return NextResponse.json({ error: 'غير مصرح برفع هذا الملف' }, { status: 403 })
+    }
+
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      select: { paymentMethod: true, paymentStatus: true },
+    })
+    if (!order || !['bank_transfer', 'wallets'].includes(order.paymentMethod) || !['PENDING', 'FAILED', 'AWAITING_CONFIRMATION'].includes(order.paymentStatus)) {
+      return NextResponse.json({ error: 'غير مصرح برفع الإيصال لهذا الطلب' }, { status: 403 })
     }
   }
 
-  // ── التحقق من MIME Type المُرسَل من العميل ───────────────
-  if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    return NextResponse.json(
-      { error: 'نوع الملف غير مدعوم. يُسمح فقط بـ JPEG و PNG و WebP و AVIF و PDF.' },
-      { status: 400 }
-    )
+  const limitKey = isAdmin ? `upload_admin_${ip}` : `upload_receipt_${orderId}_${ip}`
+  const uploadLimit = isAdmin ? 30 : 5
+  if (!checkRateLimit(limitKey, uploadLimit, 60 * 60 * 1000)) {
+    return NextResponse.json({ error: 'تم تجاوز حد رفع الملفات. يرجى المحاولة لاحقاً.' }, { status: 429 })
   }
 
-  // ── التحقق من حجم الملف ──────────────────────────────────
-  if (file.size > MAX_FILE_SIZE) {
-    return NextResponse.json(
-      {
-        error: `حجم الملف (${(file.size / 1024 / 1024).toFixed(1)}MB) يتجاوز الحد المسموح (4MB).`,
-        code: 'FILE_TOO_LARGE',
-      },
-      { status: 413 }
-    )
+  if (!ALLOWED_MIME_TYPES.has(file.type) || file.size <= 0 || file.size > MAX_FILE_SIZE) {
+    return NextResponse.json({ error: 'نوع الملف أو حجمه غير مدعوم.' }, { status: file.size > MAX_FILE_SIZE ? 413 : 400 })
   }
 
-  // ── التحقق من Magic Bytes (محتوى الملف الحقيقي) ─────────
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
+  const buffer = Buffer.from(await file.arrayBuffer())
   let detectedType = detectFileType(buffer)
-
-  // AVIF لا تطابق magic bytes البسيطة — نتحقق بطريقة خاصة
-  if (!detectedType && isAvif(buffer)) {
+  if (!detectedType && file.type === 'image/avif' && isAvif(buffer)) {
     detectedType = { ext: 'avif', mime: 'image/avif' }
   }
 
-  if (!detectedType) {
-    return NextResponse.json(
-      { error: 'محتوى الملف لا يطابق النوع المُعلَن عنه. رُفض الرفع.' },
-      { status: 415 }
-    )
+  if (!detectedType || detectedType.mime !== file.type) {
+    return NextResponse.json({ error: 'محتوى الملف لا يطابق النوع المُعلن عنه.' }, { status: 415 })
   }
 
-  // تأكيد: نوع الملف الحقيقي يجب أن يتطابق مع ما أرسله العميل
-  if (file.type !== 'image/avif' && detectedType.mime !== file.type) {
-    return NextResponse.json(
-      { error: 'نوع الملف الحقيقي لا يطابق الامتداد المُعلَن. رُفض الرفع.' },
-      { status: 415 }
-    )
-  }
-
-  const warning =
-    file.size > WARN_FILE_SIZE
-      ? `تنبيه: الصورة كبيرة (${(file.size / 1024 / 1024).toFixed(1)}MB). يُنصح بضغطها لتحسين سرعة الموقع.`
-      : undefined
-
-  // ── اسم ملف عشوائي بالكامل (لا نستخدم اسم العميل) ──────
-  const randomName = crypto.randomBytes(16).toString('hex')
-  const folder = isAdmin ? 'products' : 'receipts'
-  const filename = `${folder}/${Date.now()}-${randomName}.${detectedType.ext}`
-
-  // ── التحقق من توفر الـ Token ──────────────────────────────
   const blobToken = process.env.BLOB_READ_WRITE_TOKEN
   if (!blobToken) {
     console.error('BLOB_READ_WRITE_TOKEN is not configured')
-    return NextResponse.json({ error: 'خطأ في إعدادات الخادم' }, { status: 500 })
+    return NextResponse.json({ error: 'خدمة التخزين غير مهيأة' }, { status: 503 })
   }
 
+  const folder = isAdmin ? 'products' : 'receipts'
+  const filename = `${folder}/${Date.now()}-${crypto.randomBytes(16).toString('hex')}.${detectedType.ext}`
+  let uploadedUrl: string | undefined
+
   try {
-    const { url } = await put(filename, buffer, {
-      access: 'public',
+    const blob = await put(filename, buffer, {
+      access: isAdmin ? 'public' : 'private',
       token: blobToken,
       contentType: detectedType.mime,
-      cacheControlMaxAge: 31536000,
+      cacheControlMaxAge: isAdmin ? 31536000 : 0,
     })
+    uploadedUrl = blob.url
 
-    return NextResponse.json({ url, warning })
-  } catch (error: unknown) {
+    if (!isAdmin) {
+      const updated = await prisma.order.updateMany({
+        where: {
+          id: orderId,
+          paymentStatus: { in: ['PENDING', 'FAILED', 'AWAITING_CONFIRMATION'] },
+        },
+        data: {
+          paymentProofUrl: uploadedUrl,
+          transactionId: transactionId || undefined,
+          paymentStatus: 'AWAITING_CONFIRMATION',
+        },
+      })
+
+      if (updated.count !== 1) {
+        await del(uploadedUrl, { token: blobToken })
+        return NextResponse.json({ error: 'لم يعد الطلب متاحاً لإرفاق الإيصال' }, { status: 409 })
+      }
+    }
+
+    const warning = file.size > WARN_FILE_SIZE
+      ? `تنبيه: الملف كبير (${(file.size / 1024 / 1024).toFixed(1)}MB). يُنصح بضغطه لتحسين سرعة الموقع.`
+      : undefined
+
+    return NextResponse.json({ url: uploadedUrl, warning })
+  } catch (error) {
+    if (uploadedUrl && !isAdmin) {
+      try { await del(uploadedUrl, { token: blobToken }) } catch (cleanupError) { console.error('Blob cleanup failed:', cleanupError) }
+    }
     console.error('Blob upload error:', error)
     return NextResponse.json({ error: 'فشل رفع الملف. يرجى المحاولة لاحقاً.' }, { status: 500 })
   }

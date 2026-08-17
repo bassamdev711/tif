@@ -1,16 +1,22 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Package, Layers, CreditCard, ArrowRight, ShoppingCart, Truck, FileText, Megaphone, Search, Menu, X, Phone, Inbox, MessageSquare, Activity, Palette, Settings, User, Bell } from 'lucide-react'
 import LogoutButton from './LogoutButton'
 
+type AdminProfile = {
+  name: string
+  avatarUrl: string | null
+}
+
 export default function AdminSidebar({ 
   profile, 
   children 
 }: { 
-  profile?: any
+  profile?: AdminProfile
   children: React.ReactNode
 }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -60,9 +66,9 @@ export default function AdminSidebar({
         </div>
         {profile && (
           <Link href="/admin/profile">
-            <div className="w-8 h-8 rounded-full overflow-hidden bg-white/20 flex items-center justify-center border border-white/20">
+            <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/20 flex items-center justify-center border border-white/20">
               {profile.avatarUrl ? (
-                <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
+                <Image src={profile.avatarUrl} alt={profile.name} fill sizes="40px" className="object-cover" />
               ) : (
                 <span className="text-sm text-ivory font-bold">{profile.name?.charAt(0)}</span>
               )}
@@ -98,7 +104,7 @@ export default function AdminSidebar({
               <div className="mt-8 flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10">
                 <div className="w-10 h-10 rounded-full overflow-hidden bg-white/10 flex-shrink-0 flex items-center justify-center relative border border-white/20">
                   {profile.avatarUrl ? (
-                    <img src={profile.avatarUrl} alt={profile.name} className="w-full h-full object-cover" />
+                    <Image src={profile.avatarUrl} alt={profile.name} fill sizes="40px" className="object-cover" />
                   ) : (
                     <span className="text-lg text-ivory font-bold">{profile.name?.charAt(0)}</span>
                   )}

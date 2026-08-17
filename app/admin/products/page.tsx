@@ -1,12 +1,25 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { Plus, Edit } from 'lucide-react'
 import prisma from '@/lib/prisma'
 import DeleteButton from './DeleteButton'
+import { Prisma } from '@prisma/client'
+
+type ProductRow = {
+  id: string
+  name: string
+  slug: string
+  brand: string | null
+  price: Prisma.Decimal
+  stock: number
+  isActive: boolean
+  imageUrl: string | null
+}
 
 export const dynamic = 'force-dynamic'
 
 export default async function ProductsPage() {
-  let products: any[] = []
+  let products: ProductRow[] = []
   
   try {
     products = await prisma.product.findMany({
@@ -69,7 +82,7 @@ export default async function ProductsPage() {
                   <tr key={product.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.name} className="w-10 h-10 object-cover rounded" />
+                        <Image src={product.imageUrl} alt={product.name} width={40} height={40} className="w-10 h-10 object-cover rounded" />
                       ) : (
                         <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center text-xs text-gray-500">بدون</div>
                       )}

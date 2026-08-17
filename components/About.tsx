@@ -2,7 +2,14 @@
 
 import { motion } from "framer-motion";
 
-export default function About({ data = {} }: { data?: any }) {
+type AboutData = {
+  aboutTopTitle?: string | null
+  aboutMainTitle?: string | null
+  aboutQuote?: string | null
+  aboutDescription?: string | null
+}
+
+export default function About({ data = {} }: { data?: AboutData }) {
   return (
     <section id="about" className="relative py-24 md:py-32 bg-surface overflow-hidden">
       <div className="max-w-7xl mx-auto px-6 md:px-12">

@@ -2,82 +2,133 @@
 
 import prisma from '@/lib/prisma'
 import { headers } from 'next/headers'
+import crypto from 'crypto'
 import { checkRateLimit } from '@/lib/rate-limit'
 import { CheckoutData } from '@/components/CheckoutProvider'
 import { CartItem } from '@/components/CartProvider'
 import { validateCouponCode } from '@/app/admin/marketing/coupons/actions'
 import { sendWebPushNotification } from '@/lib/web-push'
+import { createOrderUploadToken, verifyOrderUploadToken } from '@/lib/order-upload-token'
+import { createOrderTrackingToken } from '@/lib/order-tracking-token'
+
+const PAYMENT_METHODS = new Set(['cod', 'bank_transfer', 'wallets'])
+const RECEIPT_PAYMENT_METHODS = new Set(['bank_transfer', 'wallets'])
+
+function getClientIp(value: string | null): string {
+  const forwarded = value?.split(',').map((part) => part.trim()).filter(Boolean)
+  return (forwarded?.at(-1) || '127.0.0.1').slice(0, 64)
+}
+
+function normalizeText(value: unknown, maxLength: number): string {
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
+}
+
+function isValidCheckoutData(data: CheckoutData): boolean {
+  const fullName = normalizeText(data.fullName, 120)
+  const phone = normalizeText(data.phone, 32)
+  const governorate = normalizeText(data.governorate, 100)
+  const city = normalizeText(data.city, 100)
+  const address = normalizeText(data.address, 500)
+
+  return (
+    fullName.length >= 2 &&
+    phone.length >= 7 &&
+    /^[+\d\s().-]+$/.test(phone) &&
+    governorate.length >= 2 &&
+    city.length >= 2 &&
+    address.length >= 5 &&
+    PAYMENT_METHODS.has(data.paymentMethod)
+  )
+}
 
 export async function createOrder(
   checkoutData: CheckoutData,
   cartItems: CartItem[],
-  cartTotal: number,
+  _clientCartTotal: number,
   couponCode?: string,
-  paymentProofUrl?: string,
-  transactionId?: string
+  _legacyPaymentProofUrl?: string,
+  transactionId?: string,
+  idempotencyKey?: string,
 ) {
   try {
     const headersList = await headers()
-    const ip = headersList.get('x-forwarded-for') || '127.0.0.1'
-    
-    // Limit to 3 orders per 15 minutes (900000 ms) per IP
+    const ip = getClientIp(headersList.get('x-forwarded-for'))
+    const requestKey = typeof idempotencyKey === 'string' ? idempotencyKey.trim().slice(0, 128) : ''
+
+    if (!requestKey || !/^[A-Za-z0-9_-]{20,128}$/.test(requestKey)) {
+      return { success: false, error: 'تعذر التحقق من جلسة الطلب. يرجى تحديث الصفحة والمحاولة مرة أخرى.' }
+    }
+
+    const existingOrder = await prisma.order.findUnique({
+      where: { idempotencyKey: requestKey },
+      select: { id: true, paymentMethod: true },
+    })
+    if (existingOrder) {
+      const paymentUploadToken = RECEIPT_PAYMENT_METHODS.has(existingOrder.paymentMethod)
+        ? await createOrderUploadToken(existingOrder.id)
+        : undefined
+      const trackingToken = await createOrderTrackingToken(existingOrder.id)
+      return { success: true, orderId: existingOrder.id, paymentUploadToken, trackingToken }
+    }
+
     if (!checkRateLimit(`order_${ip}`, 3, 900000)) {
       return { success: false, error: 'لقد تجاوزت الحد المسموح به لإنشاء الطلبات. يرجى المحاولة بعد 15 دقيقة.' }
     }
 
-    if (!cartItems || cartItems.length === 0) {
-      return { success: false, error: 'السلة فارغة' }
+    if (!checkoutData || !isValidCheckoutData(checkoutData)) {
+      return { success: false, error: 'بيانات الشحن غير مكتملة أو غير صالحة.' }
     }
 
-    if (cartItems.some(i => !Number.isInteger(i.quantity) || i.quantity <= 0)) {
-      return { success: false, error: 'كمية المنتجات غير صالحة' }
+    if (!cartItems || cartItems.length === 0 || cartItems.length > 100) {
+      return { success: false, error: 'السلة فارغة أو تحتوي على عدد غير صالح من العناصر.' }
     }
 
-    const parsedItems = cartItems.map(i => {
-      // id could be productId-variantId
-      const parts = i.id.split('-')
+    if (cartItems.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 1000)) {
+      return { success: false, error: 'كمية المنتجات غير صالحة.' }
+    }
+
+    const parsedItems = cartItems.map((item) => {
+      const parts = item.id.split('-')
       return {
-        originalId: i.id,
+        originalId: item.id,
         productId: parts[0],
-        variantId: parts.length > 1 ? parts[1] : null,
-        quantity: i.quantity,
-        price: i.price
+        variantId: parts.length > 1 ? parts.slice(1).join('-') : null,
+        quantity: item.quantity,
       }
     })
 
-    const productIds = Array.from(new Set(parsedItems.map(i => i.productId)))
+    const productIds = Array.from(new Set(parsedItems.map((item) => item.productId)))
     const dbProducts = await prisma.product.findMany({
       where: { id: { in: productIds }, isActive: true },
-      include: { variants: true }
+      include: { variants: true },
     })
 
     if (dbProducts.length !== productIds.length) {
-      return { success: false, error: 'بعض المنتجات في سلتك لم تعد متوفرة' }
+      return { success: false, error: 'بعض المنتجات في سلتك لم تعد متوفرة.' }
     }
 
     let calculatedCartTotal = 0
     const orderItemsData: { productId: string; variantId?: string | null; quantity: number; price: number }[] = []
 
     for (const item of parsedItems) {
-      const dbProduct = dbProducts.find(p => p.id === item.productId)
-      if (!dbProduct) return { success: false, error: 'منتج غير موجود' }
-      
+      const dbProduct = dbProducts.find((product) => product.id === item.productId)
+      if (!dbProduct) return { success: false, error: 'منتج غير موجود.' }
+
       let stockToCheck = dbProduct.stock
       let itemPrice = Number(dbProduct.price)
-      
+
       if (item.variantId) {
-        const variant = dbProduct.variants.find(v => v.id === item.variantId)
-        if (!variant) return { success: false, error: `الخيار المحدد لمنتج "${dbProduct.name}" غير موجود` }
+        const variant = dbProduct.variants.find((candidate) => candidate.id === item.variantId)
+        if (!variant) return { success: false, error: `الخيار المحدد لمنتج "${dbProduct.name}" غير موجود.` }
         stockToCheck = variant.stock
         itemPrice = Number(variant.price)
       }
 
-      if (stockToCheck < item.quantity) {
-        return { success: false, error: `الكمية المطلوبة من "${dbProduct.name}" غير متوفرة (المتوفر: ${stockToCheck})` }
+      if (!Number.isFinite(itemPrice) || itemPrice < 0 || stockToCheck < item.quantity) {
+        return { success: false, error: `الكمية المطلوبة من "${dbProduct.name}" غير متوفرة.` }
       }
-      
+
       calculatedCartTotal += itemPrice * item.quantity
-      
       orderItemsData.push({
         productId: item.productId,
         variantId: item.variantId,
@@ -88,24 +139,23 @@ export async function createOrder(
 
     const storeSettings = await prisma.storeSettings.findUnique({ where: { id: 'singleton' } })
     const activeCities = await prisma.shippingCity.findMany({ where: { isActive: true } })
-
     let shippingFee = storeSettings ? Number(storeSettings.shippingFee) : 0
-    
-    // Check if store uses active shipping cities
+
+    if (!Number.isFinite(shippingFee) || shippingFee < 0) shippingFee = 0
     if (activeCities.length > 0) {
-      const selectedCity = activeCities.find(c => c.name === checkoutData.city)
-      if (selectedCity) {
-        shippingFee = Number(selectedCity.shippingFee)
-      } else {
-        return { success: false, error: 'المدينة المحددة غير مدعومة للشحن' }
+      const selectedCity = activeCities.find((city) => city.name === checkoutData.city)
+      if (!selectedCity) return { success: false, error: 'المدينة المحددة غير مدعومة للشحن.' }
+      shippingFee = Number(selectedCity.shippingFee)
+      if (!Number.isFinite(shippingFee) || shippingFee < 0) {
+        return { success: false, error: 'رسوم الشحن غير صالحة.' }
       }
     }
 
-    // تطبيق كوبون الخصم إذا وُجد
     let discountAmount = 0
     let validatedCouponId: string | null = null
     if (couponCode) {
-      const couponResult = await validateCouponCode(couponCode, calculatedCartTotal)
+      const normalizedCoupon = normalizeText(couponCode, 64).toUpperCase()
+      const couponResult = await validateCouponCode(normalizedCoupon, calculatedCartTotal)
       if (couponResult.valid && couponResult.coupon) {
         discountAmount = couponResult.coupon.discountAmount
         validatedCouponId = couponResult.coupon.id
@@ -113,219 +163,203 @@ export async function createOrder(
     }
 
     const discountedCartTotal = Math.max(0, calculatedCartTotal - discountAmount)
-
     const freeThreshold = storeSettings ? Number(storeSettings.freeShippingThreshold) : 0
-    if (freeThreshold > 0 && discountedCartTotal >= freeThreshold) {
+    if (Number.isFinite(freeThreshold) && freeThreshold > 0 && discountedCartTotal >= freeThreshold) {
       shippingFee = 0
     }
 
-    // جلب إعدادات الدفع للتحقق من التوفر وإضافة رسوم الدفع عند الاستلام
     const paymentSettings = await prisma.paymentSettings.findUnique({ where: { id: 'singleton' } })
-    
     if (paymentSettings) {
       if (checkoutData.paymentMethod === 'cod' && !paymentSettings.codEnabled) {
-        return { success: false, error: 'طريقة الدفع المختارة غير متاحة حالياً' }
+        return { success: false, error: 'طريقة الدفع المختارة غير متاحة حالياً.' }
       }
       if (checkoutData.paymentMethod === 'bank_transfer' && !paymentSettings.bankTransferEnabled) {
-        return { success: false, error: 'التحويل البنكي غير متاح حالياً' }
+        return { success: false, error: 'التحويل البنكي غير متاح حالياً.' }
       }
       if (checkoutData.paymentMethod === 'wallets' && !paymentSettings.walletsEnabled) {
-        return { success: false, error: 'المحافظ الإلكترونية غير متاحة حالياً' }
+        return { success: false, error: 'المحافظ الإلكترونية غير متاحة حالياً.' }
       }
-
-      // إضافة رسوم الدفع عند الاستلام للشحن إذا اختار العميل COD
-      if (checkoutData.paymentMethod === 'cod' && paymentSettings.codFee) {
-        shippingFee += Number(paymentSettings.codFee)
+      if (checkoutData.paymentMethod === 'cod') {
+        const codFee = Number(paymentSettings.codFee)
+        if (Number.isFinite(codFee) && codFee > 0) shippingFee += codFee
       }
     }
 
     const finalTotal = discountedCartTotal + shippingFee
-    const status = ['bank_transfer', 'wallets'].includes(checkoutData.paymentMethod) ? 'AWAITING_PAYMENT' : 'PENDING'
+    const paymentStatus = 'PENDING'
+    const transaction = normalizeText(transactionId, 100) || null
+    const year = new Date().getFullYear()
+    const orderNumber = `TIF-${year}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10).toUpperCase()}`
 
-    // Transaction
     const order = await prisma.$transaction(async (tx) => {
-      // 1. Generate orderNumber (e.g., TIF-2026-0012)
-      const year = new Date().getFullYear()
-      const orderCount = await tx.order.count()
-      const orderNumber = `TIF-${year}-${(orderCount + 1).toString().padStart(4, '0')}`
-
-      // 2. Create Order
       const newOrder = await tx.order.create({
         data: {
           orderNumber,
-          customerName: checkoutData.fullName,
-          customerPhone: checkoutData.phone,
-          governorate: checkoutData.governorate,
-          city: checkoutData.city,
-          address: checkoutData.address,
+          idempotencyKey: requestKey,
+          customerName: normalizeText(checkoutData.fullName, 120),
+          customerPhone: normalizeText(checkoutData.phone, 32),
+          governorate: normalizeText(checkoutData.governorate, 100),
+          city: normalizeText(checkoutData.city, 100),
+          address: normalizeText(checkoutData.address, 500),
           paymentMethod: checkoutData.paymentMethod,
-          shippingFee: shippingFee,
+          shippingFee,
           totalAmount: finalTotal,
-          paymentStatus: status, // Update paymentStatus, not just status!
-          status: 'NEW', // Initial order status should be NEW
+          paymentStatus,
+          status: 'NEW',
           couponId: validatedCouponId,
-          paymentProofUrl: paymentProofUrl || null,
-          transactionId: transactionId || null,
-          items: {
-            create: orderItemsData
-          }
-        }
+          paymentProofUrl: null,
+          transactionId: transaction,
+          items: { create: orderItemsData },
+        },
       })
 
-      // 2. Decrement stock atomically to prevent race conditions
       for (const item of orderItemsData) {
-        let updateResult;
-        
-        if (item.variantId) {
-          updateResult = await tx.productVariant.updateMany({
-            where: { 
-              id: item.variantId,
-              stock: { gte: item.quantity }
-            },
-            data: { stock: { decrement: item.quantity } }
-          })
-        } else {
-          updateResult = await tx.product.updateMany({
-            where: { 
-              id: item.productId,
-              stock: { gte: item.quantity }
-            },
-            data: { stock: { decrement: item.quantity } }
-          })
-        }
-        
-        if (updateResult.count === 0) {
-          throw new Error(`الكمية المطلوبة لم تعد متوفرة لبعض المنتجات، يرجى المحاولة مرة أخرى.`)
+        const updateResult = item.variantId
+          ? await tx.productVariant.updateMany({
+              where: { id: item.variantId, stock: { gte: item.quantity } },
+              data: { stock: { decrement: item.quantity } },
+            })
+          : await tx.product.updateMany({
+              where: { id: item.productId, isActive: true, stock: { gte: item.quantity } },
+              data: { stock: { decrement: item.quantity } },
+            })
+
+        if (updateResult.count !== 1) {
+          throw new Error('STOCK_UNAVAILABLE')
         }
       }
 
-      // 3. تسجيل استخدام الكوبون (Atomic Update)
       if (validatedCouponId) {
         const currentCoupon = await tx.coupon.findUnique({ where: { id: validatedCouponId } })
-        if (currentCoupon) {
-          if (currentCoupon.maxUses !== null) {
-            const updateResult = await tx.coupon.updateMany({
-              where: { id: validatedCouponId, usedCount: { lt: currentCoupon.maxUses } },
-              data: { usedCount: { increment: 1 } }
-            })
-            if (updateResult.count === 0) {
-              throw new Error('عذراً، تم استنفاد الكوبون للتو من قبل عميل آخر.')
-            }
-          } else {
-            await tx.coupon.update({
-              where: { id: validatedCouponId },
-              data: { usedCount: { increment: 1 } }
-            })
-          }
+        if (!currentCoupon || !currentCoupon.isActive || (currentCoupon.expiresAt && currentCoupon.expiresAt <= new Date())) {
+          throw new Error('COUPON_UNAVAILABLE')
         }
+
+        const couponUpdate = currentCoupon.maxUses === null
+          ? await tx.coupon.updateMany({
+              where: { id: validatedCouponId, isActive: true },
+              data: { usedCount: { increment: 1 } },
+            })
+          : await tx.coupon.updateMany({
+              where: {
+                id: validatedCouponId,
+                isActive: true,
+                usedCount: { lt: currentCoupon.maxUses },
+              },
+              data: { usedCount: { increment: 1 } },
+            })
+
+        if (couponUpdate.count !== 1) throw new Error('COUPON_UNAVAILABLE')
       }
 
       return newOrder
     })
 
-    // Send push notification to admin
     try {
       await sendWebPushNotification(
-        '🛒 طلب جديد',
+        'طلب جديد',
         `طلب جديد رقم ${order.orderNumber} بقيمة ${finalTotal} ${paymentSettings?.currency || 'ر.س'}`,
-        `/admin/orders/${order.id}`
+        `/admin/orders/${order.id}`,
       )
-    } catch (pushErr) {
-      console.error('Failed to send push notification:', pushErr)
+    } catch (pushError) {
+      console.error('Failed to send web push notification:', pushError)
     }
 
-    return { success: true, orderId: order.id }
-  } catch (error) {
+    const paymentUploadToken = RECEIPT_PAYMENT_METHODS.has(checkoutData.paymentMethod)
+      ? await createOrderUploadToken(order.id)
+      : undefined
+    const trackingToken = await createOrderTrackingToken(order.id)
+
+    return { success: true, orderId: order.id, paymentUploadToken, trackingToken }
+  } catch (error: unknown) {
+    const errorCode = typeof error === 'object' && error !== null && 'code' in error
+      ? (error as { code?: unknown }).code
+      : undefined
+    if (errorCode === 'P2002') {
+      return { success: false, error: 'تم استلام الطلب مسبقاً. يرجى تحديث الصفحة.' }
+    }
     console.error('Failed to create order:', error)
-    return { success: false, error: 'حدث خطأ أثناء إنشاء الطلب' }
+    return { success: false, error: 'حدث خطأ أثناء إنشاء الطلب.' }
   }
 }
 
-export async function updateOrderPaymentProof(orderId: string, paymentProofUrl: string, transactionId?: string) {
+export async function updateOrderPaymentProof(
+  orderId: string,
+  paymentProofUrl: string,
+  transactionId?: string,
+  uploadToken?: string,
+) {
   try {
-    // Rate limit: 5 proof uploads per hour per order (no customer auth — rate limit is primary defense)
+    if (!orderId || !paymentProofUrl || !uploadToken || !(await verifyOrderUploadToken(uploadToken, orderId))) {
+      return { success: false, error: 'غير مصرح بتحديث إثبات الدفع.' }
+    }
+
     if (!checkRateLimit(`proof_${orderId}`, 5, 60 * 60 * 1000)) {
       return { success: false, error: 'تم تجاوز الحد المسموح لرفع الإيصالات لهذا الطلب.' }
     }
 
     const currentOrder = await prisma.order.findUnique({ where: { id: orderId } })
-    
-    if (!currentOrder) return { success: false, error: 'الطلب غير موجود' }
-    if (!['AWAITING_PAYMENT', 'PENDING', 'REJECTED'].includes(currentOrder.paymentStatus)) {
-      return { success: false, error: 'لا يمكن إرفاق إيصال لهذا الطلب في حالته الحالية' }
+    if (!currentOrder) return { success: false, error: 'الطلب غير موجود.' }
+    if (!RECEIPT_PAYMENT_METHODS.has(currentOrder.paymentMethod) || !['PENDING', 'FAILED', 'AWAITING_CONFIRMATION'].includes(currentOrder.paymentStatus)) {
+      return { success: false, error: 'لا يمكن إرفاق إيصال لهذا الطلب في حالته الحالية.' }
     }
 
-    await prisma.order.update({
-      where: { id: orderId },
+    await prisma.order.updateMany({
+      where: { id: orderId, paymentStatus: { in: ['PENDING', 'FAILED', 'AWAITING_CONFIRMATION'] } },
       data: {
         paymentProofUrl,
-        transactionId,
+        transactionId: normalizeText(transactionId, 100) || undefined,
         paymentStatus: 'AWAITING_CONFIRMATION',
-      }
+      },
     })
 
-    // Send push notification to admin
     try {
       await sendWebPushNotification(
-        '💳 إثبات دفع جديد',
+        'إثبات دفع جديد',
         `تم رفع إثبات دفع للطلب رقم ${currentOrder.orderNumber}`,
-        `/admin/orders/${currentOrder.id}`
+        `/admin/orders/${currentOrder.id}`,
       )
-    } catch (pushErr) {
-      console.error('Failed to send push notification for payment proof:', pushErr)
+    } catch (pushError) {
+      console.error('Failed to send payment proof notification:', pushError)
     }
 
     return { success: true }
   } catch (error) {
     console.error('Failed to update order payment proof:', error)
-    return { success: false, error: 'حدث خطأ أثناء حفظ إثبات الدفع' }
+    return { success: false, error: 'حدث خطأ أثناء حفظ إثبات الدفع.' }
   }
 }
 
 export async function getPaymentMethods() {
-  const settings = await prisma.paymentSettings.findUnique({
-    where: { id: 'singleton' }
-  })
-  
-  let storeSettings = await prisma.storeSettings.findUnique({
-    where: { id: 'singleton' }
-  })
-
-  // fallback if not yet initialized
-  if (!storeSettings) {
-    storeSettings = { id: 'singleton', shippingFee: 0 as any, freeShippingThreshold: 0 as any, updatedAt: new Date() } as any
-  }
-  
+  const settings = await prisma.paymentSettings.findUnique({ where: { id: 'singleton' } })
+  const storeSettings = await prisma.storeSettings.findUnique({ where: { id: 'singleton' } })
   const bankAccounts = await prisma.bankAccount.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   })
-  
   const digitalWallets = await prisma.digitalWallet.findMany({
     where: { isActive: true },
-    orderBy: { createdAt: 'desc' }
+    orderBy: { createdAt: 'desc' },
   })
-
   const shippingCities = await prisma.shippingCity.findMany({
     where: { isActive: true },
-    orderBy: { name: 'asc' }
+    orderBy: { name: 'asc' },
   })
 
   return {
-    settings: settings ? {
-      ...settings,
-      codFee: Number(settings.codFee)
-    } : null,
+    settings: settings
+      ? { ...settings, codFee: Number(settings.codFee) }
+      : null,
     storeSettings: {
       shippingFee: Number(storeSettings?.shippingFee || 0),
-      freeShippingThreshold: Number(storeSettings?.freeShippingThreshold || 0)
+      freeShippingThreshold: Number(storeSettings?.freeShippingThreshold || 0),
     },
-    shippingCities: shippingCities.map(c => ({
-      id: c.id,
-      name: c.name,
-      shippingFee: Number(c.shippingFee)
+    shippingCities: shippingCities.map((city) => ({
+      id: city.id,
+      name: city.name,
+      shippingFee: Number(city.shippingFee),
     })),
     bankAccounts,
-    digitalWallets
+    digitalWallets,
   }
 }

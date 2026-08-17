@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { startTransition, useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
 import { uploadOgImage, uploadFavicon, saveStoreUrl } from './actions'
@@ -36,11 +36,6 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 4000)
   }
-
-  // Generate QR on load if storeUrl exists
-  useEffect(() => {
-    if (initial.storeUrl) generateQr(initial.storeUrl, initial.faviconUrl, qrColor)
-  }, [qrColor])
 
   const generateQr = async (url: string, logoUrl?: string | null, color: string = '#1a544a') => {
     if (!url) return
@@ -147,6 +142,17 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
       qrImg.src = qrDataUrl
     })
   }
+
+  const generateQrRef = useRef(generateQr)
+
+  // Generate QR on load if storeUrl exists
+  useEffect(() => {
+    if (initial.storeUrl) {
+      startTransition(() => {
+        void generateQrRef.current(initial.storeUrl!, initial.faviconUrl, qrColor)
+      })
+    }
+  }, [initial.faviconUrl, initial.storeUrl, qrColor])
 
   const handleOgUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]

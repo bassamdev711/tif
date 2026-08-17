@@ -19,13 +19,43 @@ const XIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number }) => (
 export default async function Footer() {
   const currentYear = new Date().getFullYear();
   
-  const legalPages = await prisma.legalPage.findMany({
-    where: { isActive: true },
-    orderBy: { createdAt: 'asc' }
-  });
+  let legalPages: Array<{ id: string; slug: string; title: string }> = []
+  let settings: { showShippingInFooter: boolean; showReturnInFooter: boolean } | null = null
+  let contactSettings: {
+    phoneNumber: string | null
+    showPhoneNumber: boolean
+    emailAddress: string | null
+    showEmailAddress: boolean
+    address: string | null
+    showAddress: boolean
+    instagramUrl: string | null
+    showInstagram: boolean
+    facebookUrl: string | null
+    showFacebook: boolean
+    twitterUrl: string | null
+    showTwitter: boolean
+    telegramUrl: string | null
+    showTelegram: boolean
+    threadsUrl: string | null
+    showThreads: boolean
+  } | null = null
 
-  const settings = await prisma.storeSettings.findUnique({ where: { id: 'singleton' } });
-  const contactSettings = await prisma.contactSettings.findUnique({ where: { id: 'singleton' } });
+  try {
+    const [dbLegalPages, dbSettings, dbContactSettings] = await Promise.all([
+      prisma.legalPage.findMany({
+        where: { isActive: true },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true, slug: true, title: true },
+      }),
+      prisma.storeSettings.findUnique({ where: { id: 'singleton' } }),
+      prisma.contactSettings.findUnique({ where: { id: 'singleton' } }),
+    ])
+    legalPages = dbLegalPages
+    settings = dbSettings
+    contactSettings = dbContactSettings
+  } catch {
+    // Render the configured fallbacks when the database is unavailable during build or runtime.
+  }
 
   const phone = contactSettings?.phoneNumber || '+967 777 777 777';
   const showPhone = contactSettings?.showPhoneNumber !== false;

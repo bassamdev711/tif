@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, startTransition, useContext, useState, useEffect, ReactNode } from 'react'
 import { useCurrency } from '@/components/CurrencyProvider'
 
 export interface CartItem {
@@ -53,13 +53,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('tif_cart')
-      if (stored) setCartItems(JSON.parse(stored))
       const storedCoupon = localStorage.getItem('tif_coupon')
-      if (storedCoupon) setAppliedCoupon(JSON.parse(storedCoupon))
+      startTransition(() => {
+        if (stored) setCartItems(JSON.parse(stored))
+        if (storedCoupon) setAppliedCoupon(JSON.parse(storedCoupon))
+      })
     } catch (error) {
       console.error('Failed to parse cart from local storage', error)
     }
-    setIsLoaded(true)
+    startTransition(() => {
+      setIsLoaded(true)
+    })
   }, [])
 
   // Save to local storage
@@ -84,20 +88,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
   // Re-validate coupon if cart total changes
   useEffect(() => {
     if (isLoaded && appliedCoupon && appliedCoupon.minOrderAmount !== null) {
-      if (cartTotal < appliedCoupon.minOrderAmount) {
-        setAppliedCoupon(null)
-        setCouponError(`تم إزالة الكوبون لأن مجموع السلة أقل من الحد الأدنى (${appliedCoupon.minOrderAmount} {currency})`)
-      } else {
-        // Recalculate discount if it's a percentage
-        if (appliedCoupon.type === 'PERCENTAGE') {
+      startTransition(() => {
+        if (cartTotal < appliedCoupon.minOrderAmount!) {
+          setAppliedCoupon(null)
+          setCouponError(`تم إزالة الكوبون لأن مجموع السلة أقل من الحد الأدنى (${appliedCoupon.minOrderAmount} ${currency})`)
+        } else if (appliedCoupon.type === 'PERCENTAGE') {
           const discountAmount = Math.round(((cartTotal * appliedCoupon.value) / 100) * 100) / 100
           if (discountAmount !== appliedCoupon.discountAmount) {
             setAppliedCoupon({ ...appliedCoupon, discountAmount })
           }
         }
-      }
+      })
     }
-  }, [cartTotal, isLoaded])
+  }, [cartTotal, isLoaded, appliedCoupon, currency])
 
   const addToCart = (item: CartItem) => {
     setCartItems(prev => {

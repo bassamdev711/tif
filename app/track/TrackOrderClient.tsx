@@ -2,24 +2,45 @@
 
 import React, { useState } from 'react'
 import Image from 'next/image'
+import { useSearchParams } from 'next/navigation'
 import { trackOrderByOrderId, trackOrdersByPhone } from './actions'
 import { Package, Truck, CheckCircle2, Search, Clock, ShieldCheck, XCircle, AlertCircle, Phone, ArrowRight } from 'lucide-react'
 import { useCurrency } from '@/components/CurrencyProvider'
 
 type TrackingMethod = 'PHONE' | 'ORDER_ID'
 
+type TrackedOrder = {
+  id: string
+  orderNumber: string | null
+  status: string
+  paymentStatus: string
+  paymentMethod: string
+  totalAmount: number
+  shippingFee: number
+  createdAt: string | Date
+  items: Array<{
+    id: string
+    productName: string
+    imageUrl: string | null
+    quantity: number
+    price: number
+  }>
+}
+
 export default function TrackOrderClient() {
   const currency = useCurrency()
+  const searchParams = useSearchParams()
+  const trackingToken = searchParams.get('token') || ''
 
-  const [method, setMethod] = useState<TrackingMethod>('PHONE')
-  const [orderId, setOrderId] = useState('')
+  const [method, setMethod] = useState<TrackingMethod>(trackingToken ? 'ORDER_ID' : 'PHONE')
+  const [orderId, setOrderId] = useState(() => searchParams.get('orderId') || '')
   const [phone, setPhone] = useState('')
   
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
-  const [order, setOrder] = useState<any>(null) // Single order details
-  const [ordersList, setOrdersList] = useState<any[]>([]) // Multiple orders for phone
+  const [order, setOrder] = useState<TrackedOrder | null>(null)
+  const [ordersList, setOrdersList] = useState<TrackedOrder[]>([])
   const [viewState, setViewState] = useState<'FORM' | 'LIST' | 'DETAIL'>('FORM')
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,19 +51,20 @@ export default function TrackOrderClient() {
     setOrdersList([])
     
     if (method === 'ORDER_ID') {
-      const res = await trackOrderByOrderId(orderId)
-      if (res.success) {
+      const res = await trackOrderByOrderId(orderId, trackingToken)
+      if (res.success && res.order) {
         setOrder(res.order)
         setViewState('DETAIL')
       } else {
         setError(res.error || 'حدث خطأ غير متوقع')
       }
     } else {
-      const res = await trackOrdersByPhone(phone)
+      const res = await trackOrdersByPhone(phone, orderId)
       if (res.success && res.orders) {
-        if (res.orders.length === 1) {
+        const firstOrder = res.orders[0]
+        if (res.orders.length === 1 && firstOrder) {
           // If only 1 order, go straight to detail
-          setOrder(res.orders[0])
+          setOrder(firstOrder)
           setViewState('DETAIL')
         } else {
           // Show list of orders
@@ -57,7 +79,7 @@ export default function TrackOrderClient() {
     setLoading(false)
   }
 
-  const handleSelectOrder = (selectedOrder: any) => {
+  const handleSelectOrder = (selectedOrder: TrackedOrder) => {
     setOrder(selectedOrder)
     setViewState('DETAIL')
   }
@@ -117,7 +139,7 @@ export default function TrackOrderClient() {
               onClick={() => { setMethod('PHONE'); setError(''); }}
               className={`pb-3 md:pb-4 px-4 md:px-6 font-bold text-base md:text-lg transition-colors border-b-2 flex items-center gap-1.5 md:gap-2 ${method === 'PHONE' ? 'border-accent text-foreground' : 'border-transparent text-gray-600 hover:text-foreground'}`}
             >
-              <Phone size={17} className="md:w-5 md:h-5" /> برقم الهاتف
+              <Phone size={17} className="md:w-5 md:h-5" /> بالهاتف ورقم الطلب
             </button>
             <button 
               type="button"
@@ -145,7 +167,21 @@ export default function TrackOrderClient() {
                     className="w-full bg-surface/50 border border-black/10 rounded-none py-3 md:py-4 pr-11 pl-4 focus:outline-none focus:border-accent transition-colors text-right text-base md:text-lg"
                   />
                 </div>
-                <p className="text-xs text-gray-500 mt-2">ستظهر لك قائمة بجميع الطلبات المرتبطة بهذا الرقم.</p>
+                    <p className="text-xs text-gray-500 mt-2">أدخل رقم الهاتف ورقم الطلب معًا للتحقق من ملكية الطلب.</p>
+                <div className="flex flex-col mt-4">
+                  <label className="text-sm font-bold text-foreground mb-2">رقم الطلب</label>
+                  <div className="relative">
+                    <Search className="absolute right-4 top-1/2 -translate-y-1/2 text-foreground/40 w-5 h-5" />
+                    <input
+                      type="text"
+                      value={orderId}
+                      onChange={(e) => setOrderId(e.target.value)}
+                      placeholder="أدخل رقم الطلب"
+                      required
+                      className="w-full bg-surface/50 border border-black/10 rounded-none py-3 md:py-4 pr-11 pl-4 focus:outline-none focus:border-accent transition-colors text-right text-base md:text-lg"
+                    />
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="flex flex-col animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -193,7 +229,7 @@ export default function TrackOrderClient() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {ordersList.map((ord: any) => (
+            {ordersList.map((ord) => (
               <div 
                 key={ord.id} 
                 onClick={() => handleSelectOrder(ord)}
@@ -329,7 +365,7 @@ export default function TrackOrderClient() {
             <div className="border-t border-black/5 pt-10">
               <h3 className="text-lg font-bold text-foreground mb-6">المنتجات المطلوبة</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {order.items.map((item: any) => (
+                {order.items.map((item) => (
                   <div key={item.id} className="flex items-center gap-4 border border-black/5 p-4 hover:border-accent/30 transition-colors bg-surface-alt/50">
                     <div className="w-20 h-20 bg-white shrink-0 border border-black/5 flex items-center justify-center p-2 relative">
                       {item.imageUrl ? (

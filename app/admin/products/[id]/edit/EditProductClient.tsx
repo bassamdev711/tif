@@ -8,6 +8,11 @@ import ImageUpload from '../../ImageUpload'
 import SeoOptimization from '@/components/admin/seo/SeoOptimization'
 import { calculateSeoScore, SeoEvaluationData } from '@/lib/seo/score'
 
+interface CollectionOption {
+  id: string
+  name: string
+}
+
 interface Product {
   id: string
   name: string
@@ -31,7 +36,7 @@ interface Product {
   seoScore: number | null
 }
 
-export default function EditProductClient({ product, collections = [] }: { product: Product, collections?: any[] }) {
+export default function EditProductClient({ product, collections = [] }: { product: Product, collections?: CollectionOption[] }) {
   const [mainImage, setMainImage] = useState(product.imageUrl || '')
   const [extraImages, setExtraImages] = useState<string[]>(product.images || [])
   const [name, setName] = useState(product.name || '')

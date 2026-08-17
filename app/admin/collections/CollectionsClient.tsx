@@ -4,14 +4,32 @@ import { useToast } from '@/components/ToastProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
 import React, { useState } from 'react'
 import { Plus, Package, Edit2, X, Trash2 } from 'lucide-react'
-import { createCollection, deleteCollection, toggleCollectionStatus, updateCollection } from './actions'
+import { createCollection, deleteCollection, updateCollection } from './actions'
 import ImageUpload from '../products/ImageUpload'
 
+type Collection = {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  imageUrl: string | null
+  isActive: boolean
+  _count?: { products: number }
+}
+
+type CollectionInput = {
+  name: string
+  slug: string
+  description: string
+  imageUrl: string | null
+  isActive: boolean
+}
+
 export default function CollectionsClient({
-  initialCollections }: { initialCollections: any[] }) {
+  initialCollections }: { initialCollections: Collection[] }) {
   const { showToast } = useToast()
   const { confirm } = useConfirm()
-  const [collections, setCollections] = useState(initialCollections)
+  const [collections] = useState(initialCollections)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -30,7 +48,7 @@ export default function CollectionsClient({
     setIsModalOpen(true)
   }
 
-  const handleEdit = (col: any) => {
+  const handleEdit = (col: Collection) => {
     setEditingId(col.id)
     setFormData({
       name: col.name || '',
@@ -61,7 +79,7 @@ export default function CollectionsClient({
     if (editingId) {
       res = await updateCollection(editingId, payload)
     } else {
-      res = await createCollection(payload as any)
+      res = await createCollection(payload as CollectionInput)
     }
 
     if(res.success) {
@@ -128,7 +146,7 @@ export default function CollectionsClient({
               
               <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-100">
                 <span className="text-gray-500 text-sm font-bold flex items-center gap-2">
-                  <Package size={16} /> {col._count.products} منتج
+                  <Package size={16} /> {col._count?.products ?? 0} منتج
                 </span>
                 <div className="flex items-center gap-3">
                   <button onClick={() => handleEdit(col)} className="text-brand hover:text-brand-800 transition-colors" title="تعديل">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Image from 'next/image'
 import { Search } from 'lucide-react'
 
 type Product = {
@@ -55,7 +56,7 @@ export default function ProductSelector({
                 className="w-4 h-4 rounded accent-emerald" 
               />
               {p.imageUrl ? (
-                <img src={p.imageUrl} alt={p.name} className="w-8 h-8 rounded object-cover" />
+                <Image src={p.imageUrl} alt={p.name} width={32} height={32} className="w-8 h-8 rounded object-cover" />
               ) : (
                 <div className="w-8 h-8 rounded bg-gray-100 flex items-center justify-center shrink-0">
                   <span className="text-xs text-gray-400">صورة</span>

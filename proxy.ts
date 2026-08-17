@@ -2,36 +2,46 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
+const ADMIN_COOKIE_NAME = 'admin_token'
+const ADMIN_JWT_ISSUER = 'tif-admin'
+const ADMIN_JWT_AUDIENCE = 'tif-admin'
+const MIN_JWT_SECRET_LENGTH = 32
 
 export default async function proxy(request: NextRequest) {
-  // Only protect /admin and subpaths
-  if (request.nextUrl.pathname.startsWith('/admin')) {
-    const token = request.cookies.get('admin_token')?.value
-
-    if (!token) {
-      // No token, redirect to login
-      return NextResponse.redirect(new URL('/login', request.url))
-    }
-
-    try {
-      const secret = new TextEncoder().encode(JWT_SECRET)
-      // Verify token
-      await jwtVerify(token, secret)
-      // Token is valid, proceed
-      return NextResponse.next()
-    } catch (error) {
-      // Invalid or expired token, redirect to login
-      const response = NextResponse.redirect(new URL('/login', request.url))
-      response.cookies.delete('admin_token') // clear the invalid cookie
-      return response
-    }
+  if (!request.nextUrl.pathname.startsWith('/admin')) {
+    return NextResponse.next()
   }
 
-  return NextResponse.next()
+  const token = request.cookies.get(ADMIN_COOKIE_NAME)?.value
+  const secretValue = process.env.JWT_SECRET
+
+  if (!token || !secretValue || secretValue.length < MIN_JWT_SECRET_LENGTH) {
+    return NextResponse.redirect(new URL('/login', request.url))
+  }
+
+  try {
+    const { payload } = await jwtVerify(
+      token,
+      new TextEncoder().encode(secretValue),
+      {
+        algorithms: ['HS256'],
+        issuer: ADMIN_JWT_ISSUER,
+        audience: ADMIN_JWT_AUDIENCE,
+      },
+    )
+
+    if (payload.role !== 'admin' || payload.sub !== 'admin') {
+      throw new Error('Invalid admin claims')
+    }
+
+    return NextResponse.next()
+  } catch {
+    const response = NextResponse.redirect(new URL('/login', request.url))
+    response.cookies.delete(ADMIN_COOKIE_NAME)
+    return response
+  }
 }
 
-// Config to run middleware only on /admin paths
 export const config = {
-  matcher: ['/admin/:path*']
+  matcher: ['/admin/:path*'],
 }

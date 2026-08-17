@@ -1,11 +1,19 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Star, Send, MessageSquare } from 'lucide-react'
+import { Star, Send } from 'lucide-react'
 import { addReview } from '@/app/actions/reviews'
 import { useToast } from '@/components/ToastProvider'
 
-export default function ReviewForm({ productId, onSuccess }: { productId?: string, onSuccess?: (review: any) => void }) {
+type Review = {
+  id: string
+  name: string
+  city: string | null
+  content: string
+  rating: number
+}
+
+export default function ReviewForm({ productId, onSuccess }: { productId?: string, onSuccess?: (review: Review) => void }) {
   const [name, setName] = useState('')
   const [city, setCity] = useState('')
   const [content, setContent] = useState('')
@@ -38,7 +46,7 @@ export default function ReviewForm({ productId, onSuccess }: { productId?: strin
       setCity('')
       setContent('')
       setRating(5)
-      if (onSuccess) onSuccess(res.data)
+      if (onSuccess && res.data) onSuccess(res.data)
     } else {
       showToast('error', res.error || 'حدث خطأ غير متوقع')
     }

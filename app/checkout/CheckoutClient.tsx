@@ -1,10 +1,10 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useEffect, useState, useSyncExternalStore, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, Minus, Plus, Trash2, CheckCircle2, AlertCircle, UploadCloud, Copy } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Minus, Plus, Trash2, AlertCircle, UploadCloud, Copy } from 'lucide-react'
 import { useCart } from '@/components/CartProvider'
 import { useCheckout } from '@/components/CheckoutProvider'
 import { getPaymentMethods } from './actions'
@@ -12,26 +12,56 @@ import { createOrder } from './actions'
 import { useCurrency } from '@/components/CurrencyProvider'
 import { compressImageClientSide } from '@/lib/compress'
 
+type ShippingCity = { id: string; name: string; shippingFee: number }
+type BankAccount = { id: string; bankName: string; accountName: string; accountNumber: string }
+type DigitalWallet = { id: string; walletName: string; accountNumber: string }
+type PaymentSettingsResponse = {
+  settings: {
+    codEnabled: boolean
+    bankTransferEnabled: boolean
+    walletsEnabled: boolean
+    codFee: number
+  } | null
+  storeSettings: { shippingFee: number; freeShippingThreshold: number }
+  shippingCities: ShippingCity[]
+  bankAccounts: BankAccount[]
+  digitalWallets: DigitalWallet[]
+}
+
+const emptySubscribe = () => () => {}
+const getClientHydrationSnapshot = () => true
+const getServerHydrationSnapshot = () => false
+
 export default function CheckoutClient() {
   const currency = useCurrency()
 
   const { cartItems, cartTotal, updateQuantity, removeFromCart, clearCart, appliedCoupon } = useCart()
   const { checkoutData, setCheckoutData } = useCheckout()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
-  const [paymentSettings, setPaymentSettings] = useState<any>(null)
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  )
+  const [paymentSettings, setPaymentSettings] = useState<PaymentSettingsResponse | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   
   const [file, setFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [transactionId, setTransactionId] = useState('')
-  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const idempotencyKeyRef = useRef<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
 
   const [formData, setFormData] = useState(checkoutData)
 
   useEffect(() => {
-    setMounted(true)
     getPaymentMethods().then(data => {
       if (!data) {
         throw new Error('No data returned');
@@ -56,7 +86,7 @@ export default function CheckoutClient() {
         digitalWallets: []
       });
     })
-  }, [])
+  }, [formData.paymentMethod])
 
   if (!mounted || !paymentSettings) {
     return (
@@ -88,7 +118,7 @@ export default function CheckoutClient() {
   
   let baseShippingFee = storeSettings.shippingFee;
   if (shippingCities.length > 0) {
-    const selectedCity = shippingCities.find((c: any) => c.name === formData.city);
+    const selectedCity = shippingCities.find((c: ShippingCity) => c.name === formData.city);
     if (selectedCity) {
       baseShippingFee = selectedCity.shippingFee;
     } else if (!formData.city && shippingCities[0]) {
@@ -105,8 +135,9 @@ export default function CheckoutClient() {
   
   // COD Fee logic
   let codFee = 0;
-  if (formData.paymentMethod === 'cod' && paymentSettings.settings?.codFee > 0) {
-    codFee = Number(paymentSettings.settings.codFee);
+  const configuredCodFee = paymentSettings.settings?.codFee ?? 0;
+  if (formData.paymentMethod === 'cod' && configuredCodFee > 0) {
+    codFee = Number(configuredCodFee);
     shippingFee += codFee;
   }
 
@@ -136,7 +167,8 @@ export default function CheckoutClient() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    if (isSubmitting) return
+
     const requiresReceipt = ['bank_transfer', 'wallets'].includes(formData.paymentMethod)
     if (requiresReceipt && !file) {
       setError('الرجاء إرفاق صورة إشعار التحويل لإتمام الطلب')
@@ -145,51 +177,61 @@ export default function CheckoutClient() {
 
     setIsSubmitting(true)
     setError('')
-    
     setCheckoutData({ ...formData, shippingFee })
 
-    let paymentProofUrl = undefined
     try {
+      const requestKey = idempotencyKeyRef.current
+        || window.sessionStorage.getItem('tif_checkout_request')
+        || window.crypto.randomUUID()
+      idempotencyKeyRef.current = requestKey
+      window.sessionStorage.setItem('tif_checkout_request', requestKey)
+
+      const result = await createOrder(
+        { ...formData, shippingFee },
+        cartItems,
+        cartTotal,
+        appliedCoupon?.code,
+        undefined,
+        transactionId,
+        requestKey,
+      )
+
+      if (!result.success || !result.orderId) {
+        setError(result.error || 'حدث خطأ ما أثناء إنشاء الطلب')
+        setIsSubmitting(false)
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+
       if (requiresReceipt && file) {
+        if (!result.paymentUploadToken) {
+          throw new Error('تعذر تجهيز رفع إيصال الدفع للطلب')
+        }
+
         const compressedFile = await compressImageClientSide(file)
         const uploadFormData = new FormData()
         uploadFormData.append('file', compressedFile)
-        uploadFormData.append('context', 'checkout')
-        
-        // Use a generic id for the folder or pass something else, 
-        // since we don't have orderId yet, the upload api handles it if orderId is missing.
+        uploadFormData.append('orderId', result.orderId)
+        uploadFormData.append('uploadToken', result.paymentUploadToken)
+        if (transactionId.trim()) uploadFormData.append('transactionId', transactionId.trim())
+
         const uploadRes = await fetch('/api/upload', {
           method: 'POST',
           body: uploadFormData,
         })
-
         if (!uploadRes.ok) {
-          throw new Error('فشل رفع الصورة، يرجى المحاولة مرة أخرى')
+          throw new Error('تم إنشاء الطلب، لكن تعذر رفع الإيصال. أعد المحاولة لإرفاقه بالطلب.')
         }
+      }
 
-        const uploadData = await uploadRes.json()
-        paymentProofUrl = uploadData.url
+      window.sessionStorage.removeItem('tif_checkout_request')
+      clearCart()
+      if (!result.trackingToken) {
+        throw new Error('تعذر تجهيز رابط التتبع الآمن للطلب')
       }
-      
-      const result = await createOrder(
-        { ...formData, shippingFee }, 
-        cartItems, 
-        cartTotal,
-        appliedCoupon?.code,
-        paymentProofUrl,
-        transactionId
-      )
-      
-      if (result.success && result.orderId) {
-        clearCart()
-        router.push(`/checkout/success/${result.orderId}`)
-      } else {
-        setError(result.error || 'حدث خطأ ما أثناء إنشاء الطلب')
-        setIsSubmitting(false)
-        window.scrollTo({ top: 0, behavior: 'smooth' })
-      }
-    } catch (err: any) {
-      setError(err.message || 'حدث خطأ غير متوقع')
+      router.push(`/checkout/success/${result.orderId}?token=${encodeURIComponent(result.trackingToken)}`)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'حدث خطأ غير متوقع')
       setIsSubmitting(false)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -226,7 +268,7 @@ export default function CheckoutClient() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 md:gap-y-8">
                   <div className="flex flex-col">
-                    <label className="text-sm font-bold text-foreground/70 mb-2">الاسم الكامل</label>
+                    <label htmlFor="fullName" className="text-sm font-bold text-foreground/70 mb-2">الاسم الكامل</label>
                     <input 
                       type="text" 
                       name="fullName"
@@ -239,7 +281,7 @@ export default function CheckoutClient() {
                   </div>
                   
                   <div className="flex flex-col">
-                    <label className="text-sm font-bold text-foreground/70 mb-2">رقم الهاتف</label>
+                    <label htmlFor="phone" className="text-sm font-bold text-foreground/70 mb-2">رقم الهاتف</label>
                     <input 
                       type="tel" 
                       name="phone"
@@ -253,7 +295,7 @@ export default function CheckoutClient() {
                   </div>
 
                   <div className="flex flex-col">
-                    <label className="text-sm font-bold text-foreground/70 mb-2">المحافظة</label>
+                    <label htmlFor="governorate" className="text-sm font-bold text-foreground/70 mb-2">المحافظة</label>
                     <select 
                       name="governorate"
                       value={formData.governorate}
@@ -282,7 +324,7 @@ export default function CheckoutClient() {
                         className="bg-transparent border-b border-black/20 pb-3 outline-none focus:border-brand transition-colors appearance-none"
                       >
                         <option value="" disabled>اختر المدينة</option>
-                        {paymentSettings.shippingCities.map((city: any) => (
+                        {paymentSettings.shippingCities.map((city: ShippingCity) => (
                           <option key={city.id} value={city.name}>{city.name}</option>
                         ))}
                       </select>
@@ -339,7 +381,7 @@ export default function CheckoutClient() {
                           <div className="mt-4 pt-4 border-t border-black/10 animate-in fade-in slide-in-from-top-2">
                             <h4 className="text-sm font-bold text-brand mb-3 uppercase">الحسابات البنكية المتاحة</h4>
                             <div className="space-y-4 mb-6">
-                              {paymentSettings.bankAccounts.map((bank: any) => (
+                              {paymentSettings.bankAccounts.map((bank: BankAccount) => (
                                 <div key={bank.id} className="bg-surface-alt p-3 rounded-md border border-black/5">
                                   <div className="flex justify-between items-center mb-1">
                                     <span className="text-xs text-foreground/70">اسم البنك</span>
@@ -440,7 +482,7 @@ export default function CheckoutClient() {
                           <div className="mt-4 pt-4 border-t border-black/10 animate-in fade-in slide-in-from-top-2">
                             <h4 className="text-sm font-bold text-brand mb-3 uppercase">المحافظ المتاحة</h4>
                             <div className="space-y-4 mb-6">
-                              {paymentSettings.digitalWallets.map((wallet: any) => (
+                              {paymentSettings.digitalWallets.map((wallet: DigitalWallet) => (
                                 <div key={wallet.id} className="bg-surface-alt p-3 rounded-md border border-black/5">
                                   <div className="flex justify-between items-center mb-1">
                                     <span className="text-xs text-foreground/70">المحفظة</span>

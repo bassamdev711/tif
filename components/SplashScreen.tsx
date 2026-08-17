@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { startTransition, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export default function SplashScreen() {
@@ -11,7 +11,9 @@ export default function SplashScreen() {
     const hasSeenSplash = sessionStorage.getItem('tif_splash_seen')
     
     if (!hasSeenSplash) {
-      setShowSplash(true)
+      startTransition(() => {
+        setShowSplash(true)
+      })
       sessionStorage.setItem('tif_splash_seen', 'true')
       
       // إخفاء الشاشة بعد انتهاء الحركات (حوالي 3.5 ثواني)

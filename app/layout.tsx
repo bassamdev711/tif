@@ -4,6 +4,16 @@ import "./globals.css";
 
 import prisma from "@/lib/prisma";
 
+const DEFAULT_SITE_URL = 'https://tif-lyart.vercel.app'
+
+function getSiteUrl(): URL {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL)
+  } catch {
+    return new URL(DEFAULT_SITE_URL)
+  }
+}
+
 const tajawal = Tajawal({
   subsets: ["arabic"],
   weight: ["200", "300", "400", "500", "700"],
@@ -28,6 +38,7 @@ export async function generateMetadata(): Promise<Metadata> {
   } catch {}
 
   return {
+    metadataBase: getSiteUrl(),
     title: storeName,
     description: storeDesc,
     openGraph: {

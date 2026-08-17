@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Search, CheckCircle, AlertTriangle } from 'lucide-react';
 import { calculateSeoScore, SeoEvaluationData, SeoScoreResult } from '@/lib/seo/score';
 
@@ -25,7 +25,16 @@ export default function SeoOptimization({
 }: SeoOptimizationProps) {
   const [phrases, setPhrases] = useState<string[]>(initialPhrases);
   const [inputValue, setInputValue] = useState('');
-  const [scoreResult, setScoreResult] = useState<SeoScoreResult | null>(null);
+  const scoreResult = useMemo<SeoScoreResult>(() => {
+    const data: SeoEvaluationData = {
+      title,
+      description,
+      hasImage,
+      categoryName,
+      searchPhrases: phrases,
+    };
+    return calculateSeoScore(data);
+  }, [title, description, hasImage, categoryName, phrases]);
 
   const getTitleText = () => {
     switch (entityType) {
@@ -49,18 +58,9 @@ export default function SeoOptimization({
     }
   };
 
-  // Recalculate score whenever relevant data changes
   useEffect(() => {
-    const data: SeoEvaluationData = {
-      title,
-      description,
-      hasImage,
-      categoryName,
-      searchPhrases: phrases,
-    };
-    setScoreResult(calculateSeoScore(data));
     onPhrasesChange(phrases);
-  }, [title, description, hasImage, categoryName, phrases]);
+  }, [onPhrasesChange, phrases]);
 
   const handleAddPhrase = () => {
     if (inputValue.trim() && !phrases.includes(inputValue.trim())) {

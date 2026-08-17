@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useSyncExternalStore } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, ShoppingBag, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
@@ -10,16 +10,20 @@ import { useCart } from '@/components/CartProvider';
 import { useCurrency } from '@/components/CurrencyProvider';
 import { useToast } from '@/components/ToastProvider';
 
+const emptySubscribe = () => () => {}
+const getClientHydrationSnapshot = () => true
+const getServerHydrationSnapshot = () => false
+
 export default function FavoritesClient() {
-  const { favorites, toggleFavorite, isFavorite } = useFavorites();
+  const { favorites, toggleFavorite } = useFavorites();
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const currency = useCurrency();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  )
 
   if (!mounted) {
     return <div className="min-h-screen bg-surface-alt py-32"></div>;

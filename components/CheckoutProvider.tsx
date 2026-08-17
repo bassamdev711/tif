@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react'
+import React, { createContext, startTransition, useContext, useState, ReactNode, useEffect } from 'react'
 
 export interface CheckoutData {
   fullName: string
@@ -31,18 +31,18 @@ const CheckoutContext = createContext<CheckoutContextType | undefined>(undefined
 
 export function CheckoutProvider({ children }: { children: ReactNode }) {
   const [checkoutData, setCheckoutDataState] = useState<CheckoutData>(defaultData)
-  const [isLoaded, setIsLoaded] = useState(false)
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem('tif_checkout')
       if (stored) {
-        setCheckoutDataState(JSON.parse(stored))
+        startTransition(() => {
+          setCheckoutDataState(JSON.parse(stored))
+        })
       }
-    } catch (e) {
+    } catch {
       console.error('Failed to load checkout data')
     }
-    setIsLoaded(true)
   }, [])
 
   const setCheckoutData = (data: CheckoutData) => {

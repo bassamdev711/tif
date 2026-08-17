@@ -91,7 +91,7 @@ export default function ContactSettingsClient({ initialData }: { initialData: Co
       } else {
         showToast('error', result.error || 'فشل في حفظ الإعدادات')
       }
-    } catch (error) {
+    } catch {
       showToast('error', 'حدث خطأ غير متوقع')
     } finally {
       setIsSaving(false)

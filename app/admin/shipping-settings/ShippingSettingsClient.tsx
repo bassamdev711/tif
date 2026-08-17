@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Truck, CheckCircle2, AlertCircle, ShieldCheck, MapPin, Trash2, Plus, Edit2, X } from 'lucide-react'
+import { Truck, CheckCircle2, AlertCircle, ShieldCheck, MapPin, Trash2, Plus } from 'lucide-react'
 import { updateStoreSettings } from './actions'
 import { addShippingCity, updateShippingCity, deleteShippingCity } from '@/app/actions/shipping'
 import { useCurrency } from '@/components/CurrencyProvider'

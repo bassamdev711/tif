@@ -1,8 +1,13 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { startTransition, useEffect, useState, useSyncExternalStore } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+
+const emptySubscribe = () => () => {}
+const getClientHydrationSnapshot = () => true
+const getServerHydrationSnapshot = () => false
 
 type Campaign = {
   id: string
@@ -16,10 +21,13 @@ type Campaign = {
 
 export default function CampaignBanner({ campaign }: { campaign: Campaign }) {
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
-  const [isMounted, setIsMounted] = useState(false)
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  )
 
   useEffect(() => {
-    setIsMounted(true)
     const calculateTimeLeft = () => {
       const difference = new Date(campaign.endDate).getTime() - new Date().getTime()
       
@@ -33,7 +41,9 @@ export default function CampaignBanner({ campaign }: { campaign: Campaign }) {
       }
     }
 
-    calculateTimeLeft()
+    startTransition(() => {
+      calculateTimeLeft()
+    })
     const timer = setInterval(calculateTimeLeft, 1000)
     return () => clearInterval(timer)
   }, [campaign.endDate])
@@ -45,10 +55,12 @@ export default function CampaignBanner({ campaign }: { campaign: Campaign }) {
       {/* Background Image with Overlay */}
       {campaign.imageUrl && (
         <>
-          <img 
-            src={campaign.imageUrl} 
-            alt={campaign.title} 
-            className="absolute inset-0 w-full h-full object-cover opacity-40 transition-transform duration-700 group-hover:scale-105"
+          <Image
+            src={campaign.imageUrl}
+            alt={campaign.title}
+            fill
+            sizes="100vw"
+            className="object-cover opacity-40 transition-transform duration-700 group-hover:scale-105"
           />
           <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
         </>

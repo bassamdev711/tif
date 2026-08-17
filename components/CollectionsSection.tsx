@@ -3,11 +3,19 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowLeft } from 'lucide-react'
 
+type CollectionCard = {
+  id: string
+  name: string
+  slug: string
+  description: string | null
+  imageUrl: string | null
+}
+
 // Caching to improve speed
 export const revalidate = 3600 // revalidate every hour
 
 export default async function CollectionsSection() {
-  let collections: any[] = []
+  let collections: CollectionCard[] = []
   
   try {
     collections = await prisma.collection.findMany({

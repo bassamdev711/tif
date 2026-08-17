@@ -7,8 +7,11 @@ import prisma from '@/lib/prisma'
 export const metadata = { title: 'حملة جديدة | TIF Admin' }
 
 export default async function NewCampaignPage() {
-  const today = new Date().toISOString().slice(0, 16)
-  const nextMonth = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 16)
+  const now = new Date()
+  const today = now.toISOString().slice(0, 16)
+  const nextMonthDate = new Date(now)
+  nextMonthDate.setDate(nextMonthDate.getDate() + 30)
+  const nextMonth = nextMonthDate.toISOString().slice(0, 16)
 
   // جلب جميع المنتجات النشطة
   const products = await prisma.product.findMany({

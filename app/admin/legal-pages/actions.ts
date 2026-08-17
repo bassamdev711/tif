@@ -61,7 +61,7 @@ export async function deleteLegalPage(id: string) {
     revalidatePath('/admin/legal-pages')
     revalidatePath('/')
     return { success: true }
-  } catch (e) {
+  } catch {
     return { success: false, error: 'فشل في الحذف' }
   }
 }

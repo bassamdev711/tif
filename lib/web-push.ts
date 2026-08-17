@@ -49,9 +49,12 @@ export async function sendWebPushNotification(title: string, body: string, url: 
           },
           payload
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If the subscription is no longer valid (e.g. user revoked permission)
-        if (error.statusCode === 410 || error.statusCode === 404) {
+        const statusCode = typeof error === 'object' && error !== null && 'statusCode' in error && typeof error.statusCode === 'number'
+          ? error.statusCode
+          : undefined
+        if (statusCode === 410 || statusCode === 404) {
           console.log(`Deleting invalid subscription: ${sub.endpoint}`);
           await prisma.adminSubscription.delete({ where: { id: sub.id } });
         } else {

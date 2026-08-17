@@ -27,7 +27,7 @@ export interface StoreSchemaData {
  * Uses real product data without generating fake reviews.
  */
 export function generateProductSchema(data: ProductSchemaData) {
-  const schema: any = {
+  const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: data.name,
@@ -76,7 +76,7 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
  * Generates Structured Data for the Organization/Store.
  */
 export function generateOrganizationSchema(data: StoreSchemaData) {
-  const schema: any = {
+  const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: data.storeName,
@@ -89,7 +89,7 @@ export function generateOrganizationSchema(data: StoreSchemaData) {
 /**
  * Helper to render the JSON-LD script tag safely.
  */
-export function renderJsonLd(schema: any) {
+export function renderJsonLd(schema: unknown) {
   return {
     __html: JSON.stringify(schema),
   };

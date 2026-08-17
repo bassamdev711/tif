@@ -6,12 +6,28 @@ import { getCurrency } from '@/lib/currency'
 
 export const metadata = { title: 'كوبونات الخصم | TIF Admin' }
 
+type Coupon = {
+  id: string
+  code: string
+  description: string | null
+  type: string
+  value: number | string
+  usedCount: number
+  maxUses: number | null
+  expiresAt: Date | string | null
+  isActive: boolean
+}
+
 export default async function CouponsPage() {
   const currency = await getCurrency()
 
-  let coupons: any[] = []
+  let coupons: Coupon[] = []
   try {
-    coupons = await prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } })
+    const dbCoupons = await prisma.coupon.findMany({ orderBy: { createdAt: 'desc' } })
+    coupons = dbCoupons.map((coupon) => ({
+      ...coupon,
+      value: coupon.value.toNumber(),
+    }))
   } catch {
     // DB offline
   }
@@ -83,7 +99,7 @@ export default async function CouponsPage() {
                     <td className="px-6 py-4 font-bold text-gray-900">
                       {coupon.type === 'PERCENTAGE'
                         ? `${Number(coupon.value)}%`
-                        : `${Number(coupon.value).toLocaleString('ar-SA')} {currency}`}
+                        : `${Number(coupon.value).toLocaleString('ar-SA')} ${currency}`}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1 text-gray-600">

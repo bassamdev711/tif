@@ -4,19 +4,49 @@ import { useToast } from '@/components/ToastProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
 
 import React, { useState } from 'react'
-import { Plus, Edit2, Trash2, Save, Landmark, Wallet, Truck, Info } from 'lucide-react'
+import { Plus, Trash2, Save, Landmark, Wallet, Truck } from 'lucide-react'
 import { updatePaymentSettings, addBankAccount, deleteBankAccount, addDigitalWallet, deleteDigitalWallet } from './actions'
 
+type PaymentSettings = {
+  bankTransferEnabled: boolean
+  bankTransferInstructions: string | null
+  walletsEnabled: boolean
+  walletsInstructions: string | null
+  codEnabled: boolean
+  codFee: number | string
+  codInstructions: string | null
+  currency: string
+}
+
+type BankAccount = {
+  id: string
+  bankName: string
+  accountName: string
+  accountNumber: string
+}
+
+type DigitalWallet = {
+  id: string
+  walletName: string
+  accountNumber: string
+}
+
+type PaymentSettingsClientProps = {
+  initialSettings: PaymentSettings
+  initialBankAccounts: BankAccount[]
+  initialWallets: DigitalWallet[]
+}
+
 export default function PaymentSettingsClient({
-  initialSettings, 
-  initialBankAccounts, 
-  initialWallets 
-}: any) {
+  initialSettings,
+  initialBankAccounts,
+  initialWallets
+}: PaymentSettingsClientProps) {
   const { showToast } = useToast()
   const { confirm } = useConfirm()
-  const [settings, setSettings] = useState(initialSettings)
-  const [bankAccounts, setBankAccounts] = useState(initialBankAccounts)
-  const [wallets, setWallets] = useState(initialWallets)
+  const [settings, setSettings] = useState<PaymentSettings>(initialSettings)
+  const [bankAccounts] = useState<BankAccount[]>(initialBankAccounts)
+  const [wallets] = useState<DigitalWallet[]>(initialWallets)
   
   const [isSaving, setIsSaving] = useState(false)
   
@@ -120,7 +150,7 @@ export default function PaymentSettingsClient({
 
             <div className={`p-6 space-y-6 transition-all ${!settings.bankTransferEnabled ? 'opacity-50 pointer-events-none' : ''}`}>
               {/* Bank Accounts List */}
-              {bankAccounts.map((bank: any) => (
+              {bankAccounts.map((bank) => (
                 <div key={bank.id} className="p-5 rounded-lg border border-gray-200 bg-gray-50 relative group">
                   <div className="absolute left-4 top-4 flex gap-2">
                     <button onClick={() => handleDeleteBank(bank.id)} className="w-8 h-8 rounded bg-white hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors border border-gray-200 shadow-sm" title="حذف">
@@ -207,7 +237,7 @@ export default function PaymentSettingsClient({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {wallets.map((wallet: any) => (
+                  {wallets.map((wallet) => (
                     <tr key={wallet.id} className="hover:bg-gray-50">
                       <td className="py-3 px-4 text-sm font-bold text-gray-900">{wallet.walletName}</td>
                       <td className="py-3 px-4 text-sm font-mono" dir="ltr">{wallet.accountNumber}</td>

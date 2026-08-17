@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ShoppingBag, CreditCard, Minus, Plus, Sparkles, Heart } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
 import { useCart } from './CartProvider';
 import { getImageSizes } from '@/lib/image-utils';
 import { useCartAnimation } from './CartAnimationProvider';
@@ -49,7 +48,6 @@ function DetailModal({ product, onClose }: { product: ProductItem; onClose: () =
   const { addToCart } = useCart();
   const { flyToCart } = useCartAnimation();
   const { showToast } = useToast();
-  const pathname = usePathname();
 
   const allImages = [product.image, ...product.images].filter(Boolean);
   const [activeImage, setActiveImage] = useState(allImages[0] || '');

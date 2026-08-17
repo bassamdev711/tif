@@ -1,24 +1,33 @@
-import { MetadataRoute } from 'next';
+import type { MetadataRoute } from 'next'
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://tif-lyart.vercel.app';
+const DEFAULT_SITE_URL = 'https://tif-lyart.vercel.app'
+
+function getBaseUrl(): string {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL).origin
+  } catch {
+    return DEFAULT_SITE_URL
+  }
+}
 
 export default function robots(): MetadataRoute.Robots {
+  const baseUrl = getBaseUrl()
+
   return {
     rules: {
       userAgent: '*',
       allow: '/',
       disallow: [
-        '/admin/', 
-        '/admin/*', 
-        '/api/', 
-        '/cart', 
-        '/checkout', 
-        '/account', 
+        '/admin',
+        '/api',
+        '/cart',
+        '/checkout',
+        '/account',
         '/orders',
-        '/_next/',
-        '/api/*'
+        '/track',
+        '/_next',
       ],
     },
     sitemap: `${baseUrl}/sitemap.xml`,
-  };
+  }
 }

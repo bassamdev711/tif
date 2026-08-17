@@ -1,23 +1,40 @@
 'use server'
 
+import { cookies } from 'next/headers'
 import prisma from '@/lib/prisma'
-import { verifyAdmin } from '@/lib/auth'
+import { verifyAdmin, ADMIN_COOKIE_NAME } from '@/lib/auth'
 import { hashPassword, verifyPassword } from '@/lib/hash'
+import { validateAdminPassword } from '@/lib/password-policy'
 import { revalidatePath } from 'next/cache'
+
+function getText(formData: FormData, key: string, maxLength: number): string {
+  const value = formData.get(key)
+  return typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
+}
 
 export async function setupAdminProfile(formData: FormData) {
   await verifyAdmin()
 
-  const name = formData.get('name') as string
-  const avatarUrl = formData.get('avatarUrl') as string
-  const password = formData.get('password') as string
+  const name = getText(formData, 'name', 100)
+  const avatarUrl = getText(formData, 'avatarUrl', 2048)
+  const password = typeof formData.get('password') === 'string' ? String(formData.get('password')) : ''
 
-  if (!name || !password) {
+  if (!name || name.length < 2 || !password) {
     return { success: false, error: 'الاسم وكلمة المرور مطلوبان' }
   }
 
-  if (password.length < 6) {
-    return { success: false, error: 'يجب أن لا تقل كلمة المرور عن 6 أحرف' }
+  const passwordError = validateAdminPassword(password)
+  if (passwordError) {
+    return { success: false, error: passwordError }
+  }
+
+  const existingProfile = await prisma.adminProfile.findUnique({
+    where: { id: 'singleton' },
+    select: { isSetupComplete: true },
+  })
+
+  if (existingProfile?.isSetupComplete) {
+    return { success: false, error: 'تم إعداد حساب الإدارة مسبقاً' }
   }
 
   const hashedPassword = hashPassword(password)
@@ -28,15 +45,15 @@ export async function setupAdminProfile(formData: FormData) {
       name,
       avatarUrl: avatarUrl || null,
       passwordHash: hashedPassword,
-      isSetupComplete: true
+      isSetupComplete: true,
     },
     create: {
       id: 'singleton',
       name,
       avatarUrl: avatarUrl || null,
       passwordHash: hashedPassword,
-      isSetupComplete: true
-    }
+      isSetupComplete: true,
+    },
   })
 
   revalidatePath('/admin')
@@ -46,45 +63,35 @@ export async function setupAdminProfile(formData: FormData) {
 export async function updateAdminProfile(formData: FormData) {
   await verifyAdmin()
 
-  const name = formData.get('name') as string
-  const avatarUrl = formData.get('avatarUrl') as string
-  const themeBackground = formData.get('themeBackground') as string
-  const currentPassword = formData.get('currentPassword') as string
-  const newPassword = formData.get('newPassword') as string
+  const name = getText(formData, 'name', 100)
+  const avatarUrl = getText(formData, 'avatarUrl', 2048)
+  const themeBackground = getText(formData, 'themeBackground', 100)
+  const currentPassword = typeof formData.get('currentPassword') === 'string' ? String(formData.get('currentPassword')) : ''
+  const newPassword = typeof formData.get('newPassword') === 'string' ? String(formData.get('newPassword')) : ''
 
   const profile = await prisma.adminProfile.findUnique({
-    where: { id: 'singleton' }
+    where: { id: 'singleton' },
   })
 
-  if (!profile) {
-    return { success: false, error: 'البروفايل غير موجود' }
+  if (!profile || !profile.passwordHash || !profile.isSetupComplete) {
+    return { success: false, error: 'ملف الإدارة غير مهيأ بشكل صحيح' }
   }
 
-  // Update logic
   let updatedPasswordHash = profile.passwordHash
+  let passwordChanged = false
 
   if (newPassword) {
-    if (!currentPassword) {
-      return { success: false, error: 'يجب إدخال كلمة المرور الحالية لتغيير كلمة المرور' }
-    }
-    
-    // Verify current password against DB or env
-    let isValid = false
-    if (profile.passwordHash) {
-      isValid = verifyPassword(currentPassword, profile.passwordHash)
-    } else {
-      isValid = currentPassword === process.env.ADMIN_PASSWORD
-    }
-
-    if (!isValid) {
+    if (!currentPassword || !verifyPassword(currentPassword, profile.passwordHash)) {
       return { success: false, error: 'كلمة المرور الحالية غير صحيحة' }
     }
 
-    if (newPassword.length < 6) {
-      return { success: false, error: 'يجب أن لا تقل كلمة المرور الجديدة عن 6 أحرف' }
+    const passwordError = validateAdminPassword(newPassword)
+    if (passwordError) {
+      return { success: false, error: passwordError }
     }
 
     updatedPasswordHash = hashPassword(newPassword)
+    passwordChanged = true
   }
 
   await prisma.adminProfile.update({
@@ -93,10 +100,15 @@ export async function updateAdminProfile(formData: FormData) {
       name: name || profile.name,
       avatarUrl: avatarUrl || profile.avatarUrl,
       themeBackground: themeBackground || profile.themeBackground,
-      passwordHash: updatedPasswordHash
-    }
+      passwordHash: updatedPasswordHash,
+    },
   })
 
+  if (passwordChanged) {
+    const cookieStore = await cookies()
+    cookieStore.delete(ADMIN_COOKIE_NAME)
+  }
+
   revalidatePath('/admin')
-  return { success: true }
+  return { success: true, passwordChanged }
 }

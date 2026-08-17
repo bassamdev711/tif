@@ -5,8 +5,32 @@ import { Save, Layout, Type, BarChart, Image as ImageIcon } from 'lucide-react'
 import { updateHomepageSettings } from '@/app/actions/homepage'
 import { useToast } from '@/components/ToastProvider'
 
-export default function HomepageContentClient({ initialData }: { initialData: any }) {
-  const [formData, setFormData] = useState(initialData || {})
+type HomepageSettings = {
+  id: string
+  heroTitle: string
+  heroSubtitle: string
+  heroDescription: string
+  heroPrimaryButton: string
+  heroSecondaryButton: string
+  aboutTopTitle: string
+  aboutMainTitle: string
+  aboutQuote: string
+  aboutDescription: string
+  expTopTitle: string
+  expMainTitle: string
+  expBox1Title: string
+  expBox1Desc: string
+  expBox2Title: string
+  expBox2Desc: string
+  statsJson: string
+  updatedAt: Date
+}
+
+type EditableHomepageField = Exclude<keyof HomepageSettings, 'id' | 'updatedAt'>
+type HomepageTab = 'HERO' | 'ABOUT' | 'EXP' | 'STATS'
+
+export default function HomepageContentClient({ initialData }: { initialData: HomepageSettings | null }) {
+  const [formData, setFormData] = useState<HomepageSettings>(initialData ?? {} as HomepageSettings)
   const [stats, setStats] = useState<{value: string, label: string}[]>(
     initialData?.statsJson ? JSON.parse(initialData.statsJson) : []
   )
@@ -14,8 +38,8 @@ export default function HomepageContentClient({ initialData }: { initialData: an
   const [activeTab, setActiveTab] = useState<'HERO' | 'ABOUT' | 'EXP' | 'STATS'>('HERO')
   const { showToast } = useToast()
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData((prev: any) => ({ ...prev, [field]: value }))
+  const handleInputChange = (field: EditableHomepageField, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
   }
 
   const handleStatChange = (index: number, field: 'value' | 'label', val: string) => {
@@ -72,7 +96,7 @@ export default function HomepageContentClient({ initialData }: { initialData: an
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+            onClick={() => setActiveTab(tab.id as HomepageTab)}
             className={`px-4 py-2 rounded-lg font-bold text-sm whitespace-nowrap transition-colors flex items-center gap-2 ${activeTab === tab.id ? 'bg-emerald text-white shadow-md' : 'bg-white text-deep-green/60 hover:bg-black/5'}`}
           >
             <tab.icon size={16} />
@@ -95,7 +119,7 @@ export default function HomepageContentClient({ initialData }: { initialData: an
                   onChange={(e) => handleInputChange('heroTitle', e.target.value)}
                   className="w-full bg-[#f8f9fa] border border-black/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald/20"
                 />
-                <p className="text-xs text-black/40 mt-1">الافتراضي: "طيف"</p>
+                <p className="text-xs text-black/40 mt-1">الافتراضي: &quot;طيف&quot;</p>
               </div>
               <div>
                 <label className="block font-bold text-deep-green mb-2">العنوان الفرعي أسفل العنوان الرئيسي</label>
@@ -105,7 +129,7 @@ export default function HomepageContentClient({ initialData }: { initialData: an
                   onChange={(e) => handleInputChange('heroSubtitle', e.target.value)}
                   className="w-full bg-[#f8f9fa] border border-black/10 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald/20"
                 />
-                <p className="text-xs text-black/40 mt-1">الافتراضي: "حضورٌ لا يُنسى."</p>
+                <p className="text-xs text-black/40 mt-1">الافتراضي: &quot;حضورٌ لا يُنسى.&quot;</p>
               </div>
             </div>
             

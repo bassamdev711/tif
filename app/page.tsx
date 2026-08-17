@@ -23,14 +23,19 @@ export default async function Home() {
   const { data: settings } = await getHomepageSettings();
   const safeSettings = settings || {};
 
-  const activeCampaign = await prisma.campaign.findFirst({
-    where: {
-      isActive: true,
-      startDate: { lte: new Date() },
-      endDate: { gte: new Date() },
-    },
-    orderBy: { createdAt: 'desc' }
-  });
+  let activeCampaign: Awaited<ReturnType<typeof prisma.campaign.findFirst>> = null
+  try {
+    activeCampaign = await prisma.campaign.findFirst({
+      where: {
+        isActive: true,
+        startDate: { lte: new Date() },
+        endDate: { gte: new Date() },
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+  } catch {
+    // Render the homepage without a campaign when the database is unavailable.
+  }
 
   return (
     <main className="min-h-screen bg-surface text-foreground overflow-hidden font-sans">

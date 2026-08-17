@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, startTransition, useContext, useState, useEffect, ReactNode } from 'react'
 
 export interface FavoriteItem {
   id: string
@@ -30,12 +30,16 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     try {
       const storedFavorites = localStorage.getItem('tif_favorites')
       if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites))
+        startTransition(() => {
+          setFavorites(JSON.parse(storedFavorites))
+        })
       }
     } catch (e) {
       console.error('Failed to load favorites', e)
     }
-    setIsLoaded(true)
+    startTransition(() => {
+      setIsLoaded(true)
+    })
   }, [])
 
   // Save to local storage whenever favorites change

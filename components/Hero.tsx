@@ -1,20 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 
-export default function Hero({ data = {} }: { data?: any }) {
-  const [isMobile, setIsMobile] = useState(false);
+type HeroData = {
+  heroTitle?: string | null
+  heroSubtitle?: string | null
+  heroDescription?: string | null
+  heroPrimaryButton?: string | null
+  heroSecondaryButton?: string | null
+}
 
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 1024);
-    };
-    checkMobile();
-    window.addEventListener("resize", checkMobile);
-    return () => window.removeEventListener("resize", checkMobile);
-  }, []);
-
+export default function Hero({ data = {} }: { data?: HeroData }) {
   const scrollToProducts = () => {
     const section = document.getElementById("products");
     if (section) {

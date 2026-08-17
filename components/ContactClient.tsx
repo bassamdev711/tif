@@ -6,7 +6,16 @@ import { Phone, Mail, MapPin } from "lucide-react";
 import { submitContactMessage } from "@/app/actions/contact";
 import { useToast } from "@/components/ToastProvider";
 
-export default function ContactClient({ contactData }: { contactData?: any }) {
+type ContactData = {
+  phoneNumber?: string | null
+  showPhoneNumber?: boolean | null
+  emailAddress?: string | null
+  showEmailAddress?: boolean | null
+  address?: string | null
+  showAddress?: boolean | null
+}
+
+export default function ContactClient({ contactData }: { contactData?: ContactData | null }) {
   const phone = contactData?.phoneNumber || '+967 777 777 777'
   const showPhone = contactData?.showPhoneNumber !== false
   const email = contactData?.emailAddress || 'info@tif-perfumes.com'

@@ -34,7 +34,7 @@ export default function AnnouncementBarClient({ initial }: AnnouncementBarPageCl
       try {
         await saveAnnouncementBar(formData)
         showToast('success', 'تم حفظ الإعدادات بنجاح')
-      } catch (error) {
+      } catch {
         showToast('error', 'حدث خطأ أثناء الحفظ')
       }
     })
@@ -45,7 +45,7 @@ export default function AnnouncementBarClient({ initial }: AnnouncementBarPageCl
       try {
         await toggleAnnouncementBar(!initial.isActive)
         showToast('success', !initial.isActive ? 'تم تفعيل الشريط بنجاح' : 'تم تعطيل الشريط')
-      } catch (error) {
+      } catch {
         showToast('error', 'حدث خطأ')
       }
     })

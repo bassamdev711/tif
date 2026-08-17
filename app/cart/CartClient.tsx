@@ -2,23 +2,27 @@
 
 import Link from 'next/link'
 import Image from 'next/image'
-import { X, Minus, Plus, ArrowLeft, ShieldCheck, Truck, Tag, Loader2 } from 'lucide-react'
+import { X, Minus, Plus, ArrowLeft, Tag, Loader2 } from 'lucide-react'
 import { useCart } from '@/components/CartProvider'
-import { useEffect, useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import { useCurrency } from '@/components/CurrencyProvider'
+
+const emptySubscribe = () => () => {}
+const getClientHydrationSnapshot = () => true
+const getServerHydrationSnapshot = () => false
 
 export default function CartClient() {
   const currency = useCurrency()
 
   const { cartItems, removeFromCart, updateQuantity, cartTotal, finalTotal, appliedCoupon, couponLoading, couponError, applyCoupon, removeCoupon } = useCart()
-  const [mounted, setMounted] = useState(false)
+  const mounted = useSyncExternalStore(
+    emptySubscribe,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  )
   const [couponCode, setCouponCode] = useState('')
 
-  // Avoid hydration mismatch by only rendering after mount
-  useEffect(() => {
-    setMounted(true)
-  }, [])
-
+  // Avoid hydration mismatch by only rendering after hydration.
   if (!mounted) {
     return (
       <div className="flex-grow flex items-center justify-center pt-32 pb-24 min-h-[60vh]">

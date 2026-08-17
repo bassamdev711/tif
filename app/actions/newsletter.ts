@@ -38,7 +38,7 @@ export async function subscribeToNewsletter(email: string) {
     }
 
     await prisma.newsletterSubscriber.create({
-      data: { email }
+      data: { email: cleanEmail }
     })
 
     revalidatePath('/admin/marketing/newsletter')

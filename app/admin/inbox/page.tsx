@@ -1,24 +1,30 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { Trash2, Mail, MailOpen, Search, User, Phone, Calendar } from 'lucide-react'
+import React, { startTransition, useCallback, useEffect, useState } from 'react'
+import { Trash2, Mail, MailOpen, Search, Phone, Calendar } from 'lucide-react'
 import { getContactMessages, markMessageAsRead, deleteMessage } from '@/app/actions/contact'
 import { useToast } from '@/components/ToastProvider'
 import { useConfirm } from '@/components/ConfirmProvider'
 
+type ContactMessage = {
+  id: string
+  name: string
+  phone: string
+  email: string
+  message: string
+  isRead: boolean
+  createdAt: Date | string
+}
+
 export default function InboxPage() {
-  const [messages, setMessages] = useState<any[]>([])
+  const [messages, setMessages] = useState<ContactMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedMessage, setSelectedMessage] = useState<any | null>(null)
+  const [selectedMessage, setSelectedMessage] = useState<ContactMessage | null>(null)
   const { showToast } = useToast()
   const { confirm } = useConfirm()
 
-  useEffect(() => {
-    fetchData()
-  }, [])
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true)
     const result = await getContactMessages()
     if (result.success && result.data) {
@@ -27,9 +33,15 @@ export default function InboxPage() {
       showToast('error', result.error || 'حدث خطأ أثناء جلب الرسائل')
     }
     setLoading(false)
-  }
+  }, [showToast])
 
-  const handleRead = async (msg: any) => {
+  useEffect(() => {
+    startTransition(() => {
+      void fetchData()
+    })
+  }, [fetchData])
+
+  const handleRead = async (msg: ContactMessage) => {
     setSelectedMessage(msg)
     if (!msg.isRead) {
       const result = await markMessageAsRead(msg.id)

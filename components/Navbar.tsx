@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Search, ShoppingCart, Package, Heart } from "lucide-react";
 import Link from "next/link";
 import { useCart } from "./CartProvider";
-import { useFavorites } from "./FavoritesProvider";
 import SearchModal from "./SearchModal";
 import { useCartAnimation } from "./CartAnimationProvider";
 
@@ -14,7 +13,6 @@ export default function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const { cartCount } = useCart();
-  const { favoritesCount } = useFavorites();
   const { cartIconRef, triggerBounce, onBounceComplete } = useCartAnimation();
   const localRef = useRef<HTMLDivElement>(null);
   const [topOffset, setTopOffset] = useState(0);

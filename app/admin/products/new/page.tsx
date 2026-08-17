@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { startTransition, useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Info, ImageIcon, Settings, ChevronDown, ChevronUp } from 'lucide-react'
 import { createProduct } from '../actions'
@@ -9,23 +9,19 @@ import ImageUpload from '../ImageUpload'
 import SeoOptimization from '@/components/admin/seo/SeoOptimization'
 import { calculateSeoScore, SeoEvaluationData } from '@/lib/seo/score'
 
+type CollectionOption = { id: string; name: string }
+
 export default function NewProductPage() {
   const [mainImage, setMainImage] = useState('')
   const [extraImages, setExtraImages] = useState<string[]>([])
   const [slug, setSlug] = useState('')
   const [sku, setSku] = useState('')
-  const [collections, setCollections] = useState<any[]>([])
+  const [collections, setCollections] = useState<CollectionOption[]>([])
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [seoPhrases, setSeoPhrases] = useState<string[]>([])
   const [seoScore, setSeoScore] = useState<number>(0)
   const [showAdvanced, setShowAdvanced] = useState(false)
-
-  useEffect(() => {
-    getCollections().then(data => setCollections(data))
-    // Auto-generate initial SKU
-    generateSKU()
-  }, [])
 
   const generateSlug = (name: string) => {
     return name
@@ -40,6 +36,14 @@ export default function NewProductPage() {
     const randomString = Math.random().toString(36).substring(2, 7).toUpperCase()
     setSku(`TIF-${randomString}`)
   }
+
+  useEffect(() => {
+    startTransition(() => {
+      void getCollections().then(data => setCollections(data))
+      // Auto-generate initial SKU
+      generateSKU()
+    })
+  }, [])
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
