@@ -26,6 +26,22 @@ export class UsageLimitError extends Error {
   }
 }
 
+/**
+ * The usage migration is deployed independently from the application code.
+ * Until it exists in production, uploads must remain available instead of
+ * failing before the Vercel Blob request is made. Once the tables exist, all
+ * uploads continue through the normal quota reservation path.
+ */
+function isUsageSchemaUnavailable(error: unknown): boolean {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const code = (error as { code?: unknown }).code
+    if (code === 'P2021' || code === 'P2022') return true
+  }
+
+  const message = error instanceof Error ? error.message : String(error)
+  return /(UsagePlan|StoreSubscription|UsageSnapshot|StorageObject|relation .* does not exist|table .* does not exist)/i.test(message)
+}
+
 export function getUsageLevel(usedBytes: bigint, limitBytes: bigint): UsageLevel {
   if (limitBytes <= BigInt(0)) return 'normal'
   const percentage = Number((usedBytes * BigInt(10000)) / limitBytes) / 100
@@ -363,7 +379,18 @@ export async function putTrackedBlob(
   kind: string,
   sizeBytes: number,
 ) {
-  const reservationUrl = await reserveBlobSpace(sizeBytes, kind)
+  let reservationUrl: string
+
+  try {
+    reservationUrl = await reserveBlobSpace(sizeBytes, kind)
+  } catch (error) {
+    if (!isUsageSchemaUnavailable(error)) throw error
+
+    console.warn('Usage tables are unavailable; uploading to Vercel Blob without local quota bookkeeping.')
+    const { put } = await import('@vercel/blob')
+    return put(pathname, body, options)
+  }
+
   let uploadedUrl: string | undefined
   try {
     const { put } = await import('@vercel/blob')
