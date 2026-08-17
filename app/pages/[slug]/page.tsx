@@ -3,20 +3,22 @@ import { notFound } from 'next/navigation'
 import prisma from '@/lib/prisma'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
+import { getStoreConfig } from '@/lib/store-config'
 
 export const dynamic = 'force-dynamic'
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params
-  const page = await prisma.legalPage.findUnique({
-    where: { slug }
-  })
+  const [page, store] = await Promise.all([
+    prisma.legalPage.findUnique({ where: { slug } }),
+    getStoreConfig(),
+  ])
   
   if (!page || !page.isActive) {
-    return { title: 'الصفحة غير موجودة | TIF طيف' }
+    return { title: `الصفحة غير موجودة | ${store.name}` }
   }
 
-  return { title: `${page.title} | TIF طيف` }
+  return { title: `${page.title} | ${store.name}` }
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {

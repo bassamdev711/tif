@@ -58,7 +58,7 @@ export default function EditProductClient({ product, collections = [] }: { produ
 
   const generateSKU = () => {
     const randomString = Math.random().toString(36).substring(2, 7).toUpperCase()
-    setSku(`TIF-${randomString}`)
+    setSku(`SKU-${randomString}`)
   }
 
   return (
@@ -87,7 +87,7 @@ export default function EditProductClient({ product, collections = [] }: { produ
                 className="w-full rounded-md border-gray-300 border p-3 text-sm text-gray-900 bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">السعر (YER) *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">السعر *</label>
               <input type="number" name="price" step="0.01" min="0" required defaultValue={product.price} dir="ltr"
                 className="w-full rounded-md border-gray-300 border p-3 text-sm text-gray-900 bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black" />
             </div>
@@ -146,7 +146,7 @@ export default function EditProductClient({ product, collections = [] }: { produ
                   <label className="block text-sm font-medium text-gray-700 mb-1">نهاية رابط المنتج (Slug) *</label>
                   <div className="flex rounded-md shadow-sm" dir="ltr">
                     <span className="inline-flex items-center rounded-l-md border border-r-0 border-gray-300 px-3 text-gray-500 sm:text-sm bg-gray-50">
-                      https://tif.com/products/
+                      https://example-store.com/products/
                     </span>
                     <input type="text" name="slug" required value={slug} onChange={(e) => setSlug(e.target.value)}
                       className="w-full min-w-0 flex-1 rounded-none rounded-r-md border-gray-300 border p-2 text-sm text-gray-900 bg-white focus:border-black focus:outline-none" />
@@ -175,7 +175,7 @@ export default function EditProductClient({ product, collections = [] }: { produ
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">الماركة</label>
-                  <input type="text" name="brand" defaultValue={product.brand || 'طيف'} 
+                  <input type="text" name="brand" defaultValue={product.brand || ''}
                     className="w-full rounded-md border-gray-300 border p-2 text-sm text-gray-900 bg-white" />
                 </div>
 

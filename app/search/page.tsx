@@ -63,7 +63,7 @@ export default async function SearchPage({
             {query ? `نتائج البحث عن "${query}"` : 'البحث'}
           </h1>
           <p className="text-foreground/60">
-            {query ? `وجدنا ${products.length} نتيجة مطابقة لبحثك.` : 'اكتب ما تبحث عنه لاكتشاف عطورنا.'}
+            {query ? `وجدنا ${products.length} نتيجة مطابقة لبحثك.` : 'اكتب ما تبحث عنه لاكتشاف منتجاتنا.'}
           </p>
         </div>
 
@@ -90,14 +90,14 @@ export default async function SearchPage({
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <span className="text-accent text-2xl">طيف</span>
+                      <span className="text-accent text-2xl">متجرنا</span>
                     </div>
                   )}
                 </div>
                 
                 <div className="flex flex-col flex-grow">
                   <div className="text-xs text-accent font-bold tracking-widest mb-2 uppercase">
-                    {product.category || 'عطر'}
+                    {product.category || 'منتجات'}
                   </div>
                   <h3 className="text-lg font-bold text-foreground mb-2 group-hover:text-brand transition-colors line-clamp-1">
                     {product.name}

@@ -101,7 +101,7 @@ export default function SeoOptimization({
           <input
             type="text"
             className="flex-1 p-3 border border-gray-300 rounded-md shadow-sm focus:ring-[#1a544a] focus:border-[#1a544a]"
-            placeholder="مثال: عطر رجالي ليلي"
+            placeholder="مثال: منتج مميز للاستخدام اليومي"
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddPhrase())}

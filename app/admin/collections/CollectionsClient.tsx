@@ -112,7 +112,7 @@ export default function CollectionsClient({
           className="bg-emerald-800 text-white px-6 py-2.5 rounded-lg font-bold hover:bg-emerald-900 transition-colors flex items-center gap-2"
         >
           <Plus size={18} />
-          إنشاء مجموعة جديدة
+          إنشاء تصنيف جديد
         </button>
       </div>
 
@@ -163,7 +163,7 @@ export default function CollectionsClient({
         
         {collections.length === 0 && (
           <div className="col-span-full py-12 text-center text-gray-500">
-            لا توجد مجموعات حالياً. ابدأ بإنشاء مجموعة جديدة!
+            لا توجد تصنيفات حاليًا. ابدأ بإنشاء تصنيف جديد.
           </div>
         )}
       </div>
@@ -175,7 +175,7 @@ export default function CollectionsClient({
           <div className="relative bg-white w-full max-w-2xl rounded-xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             
             <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="text-xl font-bold text-gray-900">{editingId ? 'تعديل المجموعة' : 'إنشاء مجموعة جديدة'}</h3>
+              <h3 className="text-xl font-bold text-gray-900">{editingId ? 'تعديل المجموعة' : 'إنشاء تصنيف جديد'}</h3>
               <button onClick={handleCloseModal} className="btn btn-ghost btn-icon text-gray-400">
                 <X size={24} />
               </button>
@@ -184,7 +184,7 @@ export default function CollectionsClient({
             <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="flex flex-col gap-2">
-                  <label className="text-sm font-bold text-gray-700">اسم المجموعة</label>
+                  <label className="text-sm font-bold text-gray-700">اسم التصنيف</label>
                   <input 
                     value={formData.name}
                     onChange={e => setFormData({...formData, name: e.target.value})}
@@ -196,7 +196,7 @@ export default function CollectionsClient({
                   <label className="text-sm font-bold text-gray-700">نهاية رابط التصنيف (باللغة الإنجليزية وبدون مسافات) *</label>
                   <div className="flex rounded-lg shadow-sm" dir="ltr">
                     <span className="inline-flex items-center rounded-l-lg border border-r-0 border-gray-300 px-3 text-gray-500 sm:text-sm bg-gray-50">
-                      https://tif.com/collections/
+                      https://example-store.com/collections/
                     </span>
                     <input 
                       value={formData.slug}

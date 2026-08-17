@@ -4,7 +4,7 @@ import prisma from '@/lib/prisma'
 import { Plus, Megaphone, Trash2, Calendar, Tag } from 'lucide-react'
 import { deleteCampaign, toggleCampaign } from './actions'
 
-export const metadata = { title: 'الحملات التسويقية | TIF Admin' }
+export const metadata = { title: 'الحملات التسويقية | لوحة التحكم' }
 
 type Campaign = {
   id: string

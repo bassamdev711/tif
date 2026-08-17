@@ -200,7 +200,7 @@ function DetailModal({ product, onClose }: { product: ProductItem; onClose: () =
             transition={{ delay: 0.15 }}
           >
             <span className="text-accent font-bold text-[10px] tracking-[0.3em] uppercase mb-2 block">
-              {product.engName || 'TIF EXCLUSIVE'}
+              {product.engName || 'Featured product'}
             </span>
             <h2 className="text-2xl md:text-4xl font-black text-foreground mb-3 leading-tight">
               {product.name}
@@ -397,7 +397,7 @@ export default function ProductsClient({
             {subtitle || 'المجموعة الحصرية'}
           </span>
           <h2 className="text-2xl md:text-5xl font-black text-foreground mb-4 md:mb-6">
-            {title || 'اكتشف عطورنا'}
+            {title || 'اكتشف منتجاتنا'}
           </h2>
           <div className="w-12 md:w-16 h-[2px] bg-brand mx-auto mb-5 md:mb-8" />
           <Link
@@ -461,7 +461,7 @@ export default function ProductsClient({
                         className="object-contain p-6 mix-blend-multiply"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-accent/30 text-4xl">طيف</div>
+                      <div className="w-full h-full flex items-center justify-center text-accent/30 text-4xl">متجرنا</div>
                     )}
                   </div>
                   <div className="flex-1 flex flex-col items-center justify-center p-3 text-center bg-white z-10 border-t border-black/10">
@@ -476,7 +476,7 @@ export default function ProductsClient({
                       )}
                     </div>
                     <button className="text-[9px] font-bold uppercase tracking-wider text-brand border-b border-brand pb-0.5">
-                      اكتشف العطر
+                      اكتشف المنتج
                     </button>
                   </div>
                 </motion.div>
@@ -532,7 +532,7 @@ export default function ProductsClient({
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-accent/20 text-6xl group-hover:text-accent/40 transition-colors">
-                        طيف
+                        متجرنا
                       </div>
                     )}
                     {product.compareAtPrice && (
@@ -553,7 +553,7 @@ export default function ProductsClient({
                       )}
                     </div>
                     <button className="text-xs font-bold uppercase tracking-widest text-brand border-b border-brand/30 group-hover:border-brand pb-1 transition-colors">
-                      اكتشف العطر
+                      اكتشف المنتج
                     </button>
                   </div>
                 </motion.div>

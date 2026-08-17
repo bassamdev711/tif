@@ -18,7 +18,7 @@ type ContactData = {
 export default function ContactClient({ contactData }: { contactData?: ContactData | null }) {
   const phone = contactData?.phoneNumber || '+967 777 777 777'
   const showPhone = contactData?.showPhoneNumber !== false
-  const email = contactData?.emailAddress || 'info@tif-perfumes.com'
+  const email = contactData?.emailAddress || 'hello@example-store.com'
   const showEmail = contactData?.showEmailAddress !== false
   const address = contactData?.address || 'صنعاء، الجمهورية اليمنية'
   const showAddress = contactData?.showAddress !== false
@@ -64,7 +64,7 @@ export default function ContactClient({ contactData }: { contactData?: ContactDa
             <div>
               <h3 className="text-3xl font-black text-foreground mb-4">يسعدنا الاستماع إليك</h3>
               <p className="text-foreground/70 font-light leading-relaxed">
-                سواء كان لديك استفسار عن عطورنا، أو تود طلب توصية خاصة، أو لديك أي سؤال آخر، فإن فريق خدمة عملاء طيف مستعد دائماً لتقديم المساعدة التي تليق بك.
+                سواء كان لديك استفسار عن منتجاتنا، أو تحتاج إلى مساعدة في اختيار ما يناسبك، أو لديك أي سؤال آخر، فإن فريق خدمة العملاء مستعد دائمًا لتقديم المساعدة.
               </p>
             </div>
 

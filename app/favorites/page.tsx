@@ -1,11 +1,15 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FavoritesClient from "./FavoritesClient";
+import { getStoreConfig } from '@/lib/store-config'
 
-export const metadata = {
-  title: 'المفضلة | TIF طيف',
-  description: 'منتجاتك المفضلة من عطور طيف',
-};
+export async function generateMetadata() {
+  const store = await getStoreConfig()
+  return {
+    title: `المفضلة | ${store.name}`,
+    description: `منتجاتك المفضلة من ${store.name}`,
+  }
+}
 
 export default function FavoritesPage() {
   return (

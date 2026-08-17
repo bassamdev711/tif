@@ -6,7 +6,7 @@ import ImageUpload from '../products/ImageUpload'
 import { setupAdminProfile } from '../profile/actions'
 import { CheckCircle2, User, Lock, AlertCircle } from 'lucide-react'
 
-export default function SetupClient() {
+export default function SetupClient({ storeName }: { storeName: string }) {
   const router = useRouter()
   
   const [name, setName] = useState('مدير المتجر')
@@ -25,8 +25,8 @@ export default function SetupClient() {
       setError('كلمة المرور غير متطابقة')
       return
     }
-    if (password.length < 6) {
-      setError('كلمة المرور يجب أن لا تقل عن 6 أحرف')
+    if (password.length < 12 || !/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/\d/.test(password)) {
+      setError('كلمة المرور يجب أن تتكون من 12 محرفًا على الأقل وتحتوي على حرف كبير وحرف صغير ورقم')
       return
     }
 
@@ -53,7 +53,7 @@ export default function SetupClient() {
         <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-gold to-emerald" />
         
         <div className="text-center mb-10">
-          <h1 className="text-3xl font-black text-deep-green mb-3">أهلاً بك في لوحة تحكم طيف</h1>
+          <h1 className="text-3xl font-black text-deep-green mb-3">أهلاً بك في لوحة تحكم {storeName}</h1>
           <p className="text-deep-green/60">لنقم بتهيئة حساب الإدارة الخاص بك كخطوة أخيرة.</p>
         </div>
 
@@ -108,7 +108,7 @@ export default function SetupClient() {
                   className="w-full pl-4 pr-12 py-4 bg-ivory/30 border border-black/10 rounded-xl focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold text-deep-green transition-all"
                   placeholder="أدخل كلمة مرور قوية"
                   required
-                  minLength={6}
+                  minLength={12}
                 />
               </div>
               <p className="text-xs text-gray-500 mt-2">ستستخدم هذه الكلمة لتسجيل الدخول لاحقاً بدلاً من الكلمة الافتراضية.</p>
@@ -125,7 +125,7 @@ export default function SetupClient() {
                   className="w-full pl-4 pr-12 py-4 bg-ivory/30 border border-black/10 rounded-xl focus:outline-none focus:border-gold focus:ring-1 focus:ring-gold text-deep-green transition-all"
                   placeholder="أعد إدخال كلمة المرور"
                   required
-                  minLength={6}
+                  minLength={12}
                 />
               </div>
             </div>

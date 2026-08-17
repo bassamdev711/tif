@@ -4,10 +4,14 @@ import { Suspense } from 'react'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import TrackOrderClient from './TrackOrderClient'
+import { getStoreConfig } from '@/lib/store-config'
 
-export const metadata: Metadata = {
-  title: 'تتبع الطلب | TIF طيف',
-  description: 'تتبع حالة طلبك ومسار الشحن بكل سهولة',
+export async function generateMetadata(): Promise<Metadata> {
+  const store = await getStoreConfig()
+  return {
+    title: `تتبع الطلب | ${store.name}`,
+    description: `تتبع حالة طلبك من ${store.name} بكل سهولة`,
+  }
 }
 
 export default function TrackOrderPage() {

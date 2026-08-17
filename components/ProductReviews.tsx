@@ -24,8 +24,8 @@ export default async function ProductReviews({ productId }: { productId: string 
   return (
     <TestimonialsClient 
       reviews={serializedReviews} 
-      title="مراجعات العطر"
-      subtitle="ماذا يقول عملاؤنا عن هذا العطر؟"
+      title="مراجعات المنتج"
+      subtitle="ماذا يقول عملاؤنا عن هذا المنتج؟"
       productId={productId}
     />
   )

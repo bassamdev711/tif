@@ -23,6 +23,11 @@ function normalizeText(value: unknown, maxLength: number): string {
   return typeof value === 'string' ? value.trim().slice(0, maxLength) : ''
 }
 
+function getOrderPrefix(value: string | null | undefined): string {
+  const prefix = (value || '').toUpperCase().replace(/[^A-Z0-9]+/g, '').slice(0, 8)
+  return prefix || 'STORE'
+}
+
 function isValidCheckoutData(data: CheckoutData): boolean {
   const fullName = normalizeText(data.fullName, 120)
   const phone = normalizeText(data.phone, 32)
@@ -189,7 +194,7 @@ export async function createOrder(
     const paymentStatus = 'PENDING'
     const transaction = normalizeText(transactionId, 100) || null
     const year = new Date().getFullYear()
-    const orderNumber = `TIF-${year}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10).toUpperCase()}`
+    const orderNumber = `${getOrderPrefix(storeSettings?.storeNameLatin || storeSettings?.storeName)}-${year}-${crypto.randomUUID().replaceAll('-', '').slice(0, 10).toUpperCase()}`
 
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({

@@ -6,7 +6,7 @@ import { Mail } from "lucide-react";
 import { useToast } from "@/components/ToastProvider";
 import { subscribeToNewsletter } from "@/app/actions/newsletter";
 
-export default function Newsletter() {
+export default function Newsletter({ storeName = 'متجرك' }: { storeName?: string }) {
   const [email, setEmail] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { showToast } = useToast();
@@ -45,10 +45,10 @@ export default function Newsletter() {
           </div>
           
           <h2 className="text-3xl md:text-5xl font-black text-surface mb-6">
-            النادي الحصري لطيف
+            النادي الحصري لـ {storeName}
           </h2>
           <p className="text-surface/70 text-lg mb-10 font-light">
-            انضم إلى قائمتنا البريدية لتكون أول من يعلم عن إصداراتنا الخاصة، الفعاليات الحصرية، والعروض المميزة.
+            انضم إلى قائمتنا البريدية لتكون أول من يعلم عن الجديد، والعروض، والمحتوى الذي يهمك.
           </p>
 
           <form className="flex flex-col md:flex-row gap-4 max-w-2xl mx-auto" onSubmit={handleSubmit}>

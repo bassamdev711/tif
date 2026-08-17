@@ -73,7 +73,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                     {item.product?.imageUrl ? (
                       <Image src={item.product.imageUrl} alt={item.product.name || ''} fill className="object-contain p-2 mix-blend-multiply" />
                     ) : (
-                      <span className="text-gray-300">طيف</span>
+                      <span className="text-gray-300">متجرنا</span>
                     )}
                   </div>
                   <div className="flex-grow">

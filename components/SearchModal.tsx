@@ -102,7 +102,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="ابحث عن عطر، تصنيف، أو كلمة مفتاحية..."
+                  placeholder="ابحث عن منتج، تصنيف، أو كلمة مفتاحية..."
                   className="w-full bg-white border-2 border-brand/20 rounded-full py-3 md:py-4 pr-12 md:pr-14 pl-12 md:pl-14 text-base md:text-lg text-foreground focus:outline-none focus:border-brand transition-colors"
                 />
                 <button
@@ -135,7 +135,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                             {product.imageUrl ? (
                               <Image src={product.imageUrl} alt={product.name} fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
                             ) : (
-                              <span className="text-accent">طيف</span>
+                              <span className="text-accent">متجرنا</span>
                             )}
                           </div>
                           <div className="flex-grow">
@@ -174,7 +174,7 @@ export default function SearchModal({ isOpen, onClose }: SearchModalProps) {
                         عمليات بحث شائعة
                       </h3>
                       <div className="flex flex-wrap gap-2">
-                        {['عطور صيفية', 'هدايا', 'مسك', 'عطور نسائية', 'عروض'].map((term) => (
+                        {['الأكثر مبيعًا', 'وصل حديثًا', 'هدايا', 'عروض', 'منتجات مميزة'].map((term) => (
                           <button 
                             key={term}
                             onClick={() => setQuery(term)}

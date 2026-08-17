@@ -3,16 +3,7 @@ import { Tajawal } from "next/font/google";
 import "./globals.css";
 
 import prisma from "@/lib/prisma";
-
-const DEFAULT_SITE_URL = 'https://tif-lyart.vercel.app'
-
-function getSiteUrl(): URL {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_SITE_URL || DEFAULT_SITE_URL)
-  } catch {
-    return new URL(DEFAULT_SITE_URL)
-  }
-}
+import { getSiteUrl, getStoreConfig } from "@/lib/store-config";
 
 const tajawal = Tajawal({
   subsets: ["arabic"],
@@ -21,41 +12,30 @@ const tajawal = Tajawal({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
-  let ogImageUrl: string | null = null
-  let faviconUrl: string | null = null
-  let storeName = "TIF | طيف - حيث تتحول الرائحة إلى حضور"
-  let storeDesc = "عطور كريستالية مستوحاة من الضوء والهدوء والفخامة المطلقة"
-
-  try {
-    const settings = await prisma.storeSettings.findUnique({
-      where: { id: 'singleton' },
-      select: { ogImageUrl: true, faviconUrl: true, storeName: true, storeDescription: true }
-    })
-    ogImageUrl = settings?.ogImageUrl ?? null
-    faviconUrl = settings?.faviconUrl ?? null
-    if (settings?.storeName) storeName = settings.storeName
-    if (settings?.storeDescription) storeDesc = settings.storeDescription
-  } catch {}
+  const store = await getStoreConfig()
+  const title = store.nameLatin && store.name !== store.nameLatin
+    ? `${store.name} | ${store.nameLatin}`
+    : store.name
 
   return {
-    metadataBase: getSiteUrl(),
-    title: storeName,
-    description: storeDesc,
+    metadataBase: getSiteUrl(store.storeUrl),
+    title,
+    description: store.description,
     openGraph: {
-      title: storeName,
-      description: storeDesc,
-      ...(ogImageUrl ? { images: [{ url: ogImageUrl, width: 1200, height: 630 }] } : {}),
+      title,
+      description: store.description,
+      ...(store.ogImageUrl ? { images: [{ url: store.ogImageUrl, width: 1200, height: 630 }] } : {}),
     },
     twitter: {
       card: 'summary_large_image',
-      title: storeName,
-      description: storeDesc,
-      ...(ogImageUrl ? { images: [ogImageUrl] } : {}),
+      title,
+      description: store.description,
+      ...(store.ogImageUrl ? { images: [store.ogImageUrl] } : {}),
     },
     icons: {
-      icon: faviconUrl ?? '/favicon.ico',
-      shortcut: faviconUrl ?? '/favicon.ico',
-      apple: faviconUrl ?? '/favicon.ico',
+      icon: store.faviconUrl ?? '/favicon.ico',
+      shortcut: store.faviconUrl ?? '/favicon.ico',
+      apple: store.faviconUrl ?? '/favicon.ico',
     },
   }
 }
@@ -77,6 +57,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const store = await getStoreConfig()
   let currency = "ر.س"
   try {
     const paymentSettings = await prisma.paymentSettings.findUnique({
@@ -91,7 +72,7 @@ export default async function RootLayout({
   return (
     <html lang="ar" dir="rtl" className={`${tajawal.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col font-sans bg-surface text-foreground overflow-x-hidden pb-16 md:pb-0">
-        <SplashScreen />
+        <SplashScreen storeName={store.name} storeNameLatin={store.nameLatin} />
         <VisitorTracker />
         <CurrencyProvider currency={currency}>
           <ToastProvider>

@@ -4,7 +4,7 @@ import CampaignImageUpload from './CampaignImageUpload'
 import ProductSelector from '../ProductSelector'
 import prisma from '@/lib/prisma'
 
-export const metadata = { title: 'حملة جديدة | TIF Admin' }
+export const metadata = { title: 'حملة جديدة | لوحة التحكم' }
 
 export default async function NewCampaignPage() {
   const now = new Date()
@@ -71,7 +71,7 @@ export default async function NewCampaignPage() {
             <textarea
               name="description"
               rows={3}
-              placeholder="مثال: استمتع بخصم 20% على جميع العطور هذا الصيف!"
+              placeholder="مثال: استفد من خصم 20% على جميع المنتجات هذا الموسم!"
               className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald bg-white resize-none"
             />
           </div>

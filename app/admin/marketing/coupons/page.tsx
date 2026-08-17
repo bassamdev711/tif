@@ -4,7 +4,7 @@ import { Plus, Tag, Trash2, ToggleLeft, ToggleRight, Calendar, Users } from 'luc
 import { deleteCoupon, toggleCoupon } from './actions'
 import { getCurrency } from '@/lib/currency'
 
-export const metadata = { title: 'كوبونات الخصم | TIF Admin' }
+export const metadata = { title: 'كوبونات الخصم | لوحة التحكم' }
 
 type Coupon = {
   id: string

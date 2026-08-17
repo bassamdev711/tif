@@ -44,7 +44,7 @@ export default function FavoritesClient() {
             المفضلة
           </h1>
           <p className="text-sm md:text-lg text-foreground/60">
-            عطورك المفضلة التي اخترتها بانتظارك
+            منتجاتك المفضلة التي اخترتها بانتظارك
           </p>
         </motion.div>
 
@@ -59,7 +59,7 @@ export default function FavoritesClient() {
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-4">قائمة المفضلة فارغة</h2>
             <p className="text-foreground/60 mb-8 max-w-md mx-auto">
-              لم تقم بإضافة أي منتجات إلى المفضلة بعد. تصفح مجموعتنا واكتشف العطور التي تناسب ذوقك.
+              لم تقم بإضافة أي منتجات إلى المفضلة بعد. تصفح مجموعتنا واكتشف ما يناسب احتياجاتك.
             </p>
             <Link 
               href="/products"
@@ -101,14 +101,14 @@ export default function FavoritesClient() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center text-accent/20 text-6xl z-0">
-                      طيف
+                      متجرنا
                     </div>
                   )}
                 </div>
                 
                 <div className="flex-1 flex flex-col items-center justify-center p-3 md:p-6 text-center bg-white z-20 border-t border-black/5 relative">
                   <h3 className="text-base md:text-2xl font-black text-foreground mb-0.5 md:mb-1">{product.name}</h3>
-                  <p className="text-accent text-[9px] md:text-[10px] tracking-[0.2em] uppercase mb-2 md:mb-4">{product.engName || 'TIF EXCLUSIVE'}</p>
+                  <p className="text-accent text-[9px] md:text-[10px] tracking-[0.2em] uppercase mb-2 md:mb-4">{product.engName || 'Featured product'}</p>
                   
                   <div className="flex items-center gap-1.5 md:gap-2 mb-3 md:mb-6">
                     <p className="text-brand font-bold text-sm md:text-lg">{Number(product.price).toLocaleString('ar-SA')} {currency}</p>

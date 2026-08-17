@@ -48,7 +48,7 @@ export default async function SuccessPage({
           </div>
 
           <p className="text-foreground/70 mb-10 leading-relaxed text-lg">
-            سنقوم بمراجعة طلبك وتجهيزه بأسرع وقت ممكن. يمكنك تتبع حالة طلبك في أي وقت من خلال صفحة تتبع الطلبات. شكراً لتسوقك من طيف!
+            سنقوم بمراجعة طلبك وتجهيزه بأسرع وقت ممكن. يمكنك تتبع حالة طلبك في أي وقت من خلال صفحة تتبع الطلبات. شكرًا لثقتك بنا!
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">

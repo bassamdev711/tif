@@ -10,7 +10,15 @@ type HeroData = {
   heroSecondaryButton?: string | null
 }
 
-export default function Hero({ data = {} }: { data?: HeroData }) {
+export default function Hero({
+  data = {},
+  brandName = 'متجرك',
+  brandNameLatin = 'YOUR STORE',
+}: {
+  data?: HeroData
+  brandName?: string
+  brandNameLatin?: string
+}) {
   const scrollToProducts = () => {
     const section = document.getElementById("products");
     if (section) {
@@ -34,19 +42,19 @@ export default function Hero({ data = {} }: { data?: HeroData }) {
           transition={{ duration: 1, delay: 0.2 }}
           className="flex flex-col justify-center text-right px-12 xl:px-20 pt-20 pb-16 max-w-xl ml-auto"
         >
-          {/* Layer 2: "طيف" — the visual anchor, dominant */}
+          {/* Layer 2: store brand — the visual anchor, dominant */}
           <h1 className="text-[6.5rem] xl:text-[7.5rem] font-black text-foreground leading-[0.88] tracking-tight mb-4">
-            {data.heroTitle || "طيف"}
+            {data.heroTitle || brandName}
           </h1>
 
-          {/* Layer 3: Secondary headline — clearly subordinate to "طيف" */}
+          {/* Layer 3: Secondary headline — clearly subordinate to the brand */}
           <p className="text-2xl xl:text-3xl font-light text-brand leading-snug tracking-wide mb-10">
             {data.heroSubtitle || "حضورٌ لا يُنسى."}
           </p>
 
           {/* Layer 4: Description — calm, small, max-width restrained */}
           <p className="text-sm xl:text-base text-foreground/60 font-light leading-loose max-w-sm mb-14 whitespace-pre-line">
-            {data.heroDescription || "اكتشف مجموعتنا الحصرية من العطور الفاخرة،\nالمصممة بعناية لتمنحك تجربة حسية تدوم طويلًا."}
+            {data.heroDescription || "اكتشف مجموعتنا المختارة بعناية،\nوصممت لتمنحك تجربة تسوق تستحق التذكر."}
           </p>
 
           {/* Layer 5: CTA Buttons */}
@@ -58,7 +66,7 @@ export default function Hero({ data = {} }: { data?: HeroData }) {
               {data.heroPrimaryButton || "اكتشف المجموعة"}
             </button>
             <button className="btn btn-outline btn-lg">
-              {data.heroSecondaryButton || "قصة طيف"}
+              {data.heroSecondaryButton || "قصتنا"}
             </button>
           </div>
         </motion.div>
@@ -92,16 +100,16 @@ export default function Hero({ data = {} }: { data?: HeroData }) {
                   <div className="absolute top-0 left-[-50%] w-[100%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-20deg]" />
                   {/* Label */}
                   <div className="w-24 h-24 bg-surface/95 rounded-sm flex flex-col items-center justify-center p-2 shadow-inner border border-accent/20">
-                    <span className="text-brand font-black text-2xl">طيف</span>
+                    <span className="text-brand font-black text-2xl text-center">{brandName}</span>
                     <div className="w-6 h-[1px] bg-accent my-2" />
-                    <span className="text-foreground text-[8px] tracking-[0.2em] uppercase text-center leading-tight">EAU DE PARFUM</span>
+                    <span className="text-foreground text-[8px] tracking-[0.2em] uppercase text-center leading-tight">SIGNATURE COLLECTION</span>
                   </div>
                 </div>
               </motion.div>
 
               {/* Decorative Typography */}
               <span className="absolute top-1/4 -right-10 text-[12rem] font-serif text-surface/5 rotate-90 select-none pointer-events-none">
-                TIF
+                {brandName}
               </span>
             </div>
           </motion.div>
@@ -120,14 +128,14 @@ export default function Hero({ data = {} }: { data?: HeroData }) {
         >
           <h1 className="flex flex-col gap-1 mb-3">
             <span className="text-[2.5rem] sm:text-5xl font-black text-foreground leading-none tracking-tight">
-              {data.heroTitle || "طيف"}
+              {data.heroTitle || brandName}
             </span>
             <span className="text-xl sm:text-2xl font-light text-brand leading-tight mt-1">
               {data.heroSubtitle || "حضور لا يُنسى."}
             </span>
           </h1>
           <p className="text-sm sm:text-base text-foreground/70 font-light leading-relaxed whitespace-pre-line">
-            {data.heroDescription || "اكتشف مجموعتنا الحصرية من العطور الفاخرة، المصممة بعناية فائقة لتمنحك تجربة حسية فريدة تدوم طويلاً."}
+            {data.heroDescription || "اكتشف مجموعتنا المختارة بعناية، المصممة لتمنحك تجربة تسوق واضحة وفريدة."}
           </p>
         </motion.div>
 
@@ -151,13 +159,13 @@ export default function Hero({ data = {} }: { data?: HeroData }) {
                 <div className="w-full flex-1 bg-gradient-to-b from-bottle-brand-start to-bottle-brand-end rounded-2xl shadow-[inset_0_0_20px_rgba(255,255,255,0.1),0_20px_30px_rgba(0,0,0,0.4)] flex items-center justify-center relative overflow-hidden border border-white/10">
                   <div className="absolute top-0 left-[-50%] w-[100%] h-full bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-[-20deg]" />
                   <div className="w-16 sm:w-20 h-16 sm:h-20 bg-surface/95 rounded-sm flex flex-col items-center justify-center p-2 shadow-inner border border-accent/20">
-                    <span className="text-brand font-black text-lg sm:text-xl">طيف</span>
+                    <span className="text-brand font-black text-lg sm:text-xl text-center">{brandName}</span>
                     <div className="w-5 h-[1px] bg-accent my-1" />
-                    <span className="text-foreground text-[7px] tracking-[0.2em] uppercase text-center leading-tight">EAU DE PARFUM</span>
+                    <span className="text-foreground text-[7px] tracking-[0.2em] uppercase text-center leading-tight">SIGNATURE COLLECTION</span>
                   </div>
                 </div>
               </motion.div>
-              <span className="absolute top-1/4 -right-10 text-[7rem] sm:text-[9rem] font-serif text-surface/5 rotate-90 select-none pointer-events-none">TIF</span>
+              <span className="absolute top-1/4 -right-10 text-[7rem] sm:text-[9rem] font-serif text-surface/5 rotate-90 select-none pointer-events-none">{brandNameLatin}</span>
             </div>
           </motion.div>
 
@@ -175,7 +183,7 @@ export default function Hero({ data = {} }: { data?: HeroData }) {
               {data.heroPrimaryButton || "اكتشف المجموعة"}
             </button>
             <button className="btn btn-outline flex-1">
-              {data.heroSecondaryButton || "قصة طيف"}
+              {data.heroSecondaryButton || "قصتنا"}
             </button>
           </motion.div>
         </div>

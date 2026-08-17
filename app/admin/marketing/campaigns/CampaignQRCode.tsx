@@ -11,7 +11,7 @@ interface CampaignQRCodeProps {
 }
 
 export default function CampaignQRCode({ url, logoUrl }: CampaignQRCodeProps) {
-  const [qrColor, setQrColor] = useState('#1a544a') // Default TIF dark green
+  const [qrColor, setQrColor] = useState('#1a544a') // Neutral default; the store can customize it
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -73,7 +73,7 @@ export default function CampaignQRCode({ url, logoUrl }: CampaignQRCodeProps) {
             ctx.drawImage(img, cx - w / 2, cy - h / 2, w, h)
             ctx.restore()
           } else {
-            // Fallback: draw "TIF" text in matching color
+            // Fallback: draw a generic store mark in the matching color
             ctx.save()
             ctx.beginPath()
             ctx.arc(cx, cy, radius, 0, Math.PI * 2)
@@ -83,7 +83,7 @@ export default function CampaignQRCode({ url, logoUrl }: CampaignQRCodeProps) {
             ctx.fillStyle = '#FFFFFF'
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
-            ctx.fillText('TIF', cx, cy)
+            ctx.fillText('STORE', cx, cy)
             ctx.restore()
           }
           drawFinish()

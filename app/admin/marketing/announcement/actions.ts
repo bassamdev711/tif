@@ -47,7 +47,7 @@ export async function toggleAnnouncementBar(isActive: boolean) {
     update: { isActive },
     create: {
       id: 'singleton',
-      message: 'مرحباً بكم في متجر طيف',
+      message: 'مرحباً بكم في متجرنا',
       isActive,
     }
   })

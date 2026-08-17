@@ -192,7 +192,7 @@ export default function TrackOrderClient() {
                     type="text" 
                     value={orderId}
                     onChange={(e) => setOrderId(e.target.value)}
-                    placeholder="أدخل رقم الطلب (مثال: cm2... أو TIF-101)"
+                    placeholder="أدخل رقم الطلب (مثال: STORE-2026-ABC123)"
                     required
                     className="w-full bg-surface/50 border border-black/10 rounded-none py-3 md:py-4 pr-11 pl-4 focus:outline-none focus:border-accent transition-colors text-right text-base md:text-lg"
                   />
@@ -371,7 +371,7 @@ export default function TrackOrderClient() {
                       {item.imageUrl ? (
                         <Image src={item.imageUrl} alt={item.productName} fill className="object-contain mix-blend-multiply" />
                       ) : (
-                        <span className="text-accent text-xs">طيف</span>
+                        <span className="text-accent text-xs">متجرنا</span>
                       )}
                     </div>
                     <div>

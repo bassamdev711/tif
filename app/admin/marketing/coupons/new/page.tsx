@@ -4,7 +4,7 @@ import { createCoupon } from '../actions'
 
 import { getPaymentSettings } from '@/app/admin/payment-settings/actions'
 
-export const metadata = { title: 'كوبون جديد | TIF Admin' }
+export const metadata = { title: 'كوبون جديد | لوحة التحكم' }
 
 export default async function NewCouponPage() {
   const paymentSettings = await getPaymentSettings()

@@ -5,10 +5,14 @@ import Footer from '@/components/Footer'
 import { getCurrency } from '@/lib/currency'
 import ProductCard from '@/components/ProductCard'
 import CategoryFilterChips from '@/components/CategoryFilterChips'
+import { getStoreConfig } from '@/lib/store-config'
 
-export const metadata: Metadata = {
-  title: 'تصنيفاتنا | TIF طيف',
-  description: 'اكتشف تصنيفاتنا المختلفه',
+export async function generateMetadata(): Promise<Metadata> {
+  const store = await getStoreConfig()
+  return {
+    title: `المنتجات | ${store.name}`,
+    description: `اكتشف منتجات ${store.name}`,
+  }
 }
 
 export const dynamic = 'force-dynamic'

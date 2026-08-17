@@ -15,11 +15,77 @@ export async function getBrandingSettings() {
         faviconUrl: true,
         storeUrl: true,
         storeName: true,
+        storeNameLatin: true,
+        storeTagline: true,
+        storeDescription: true,
+        logoUrl: true,
+        locale: true,
+        currencyCode: true,
       }
     })
     return { success: true, settings }
   } catch {
     return { success: false, error: 'فشل في جلب إعدادات الهوية البصرية' }
+  }
+}
+
+export type StoreBrandingInput = {
+  storeName: string
+  storeNameLatin: string
+  storeTagline: string
+  storeDescription: string
+  locale: string
+  currencyCode: string
+}
+
+export async function saveStoreBranding(input: StoreBrandingInput) {
+  await verifyAdmin()
+  try {
+    const storeName = input.storeName.trim()
+    const storeNameLatin = input.storeNameLatin.trim()
+    const storeTagline = input.storeTagline.trim()
+    const storeDescription = input.storeDescription.trim()
+    const locale = input.locale.trim().toLowerCase()
+    const currencyCode = input.currencyCode.trim().toUpperCase()
+
+    if (!storeName || storeName.length > 80) {
+      return { success: false, error: 'اسم المتجر مطلوب وبحد أقصى 80 محرفًا' }
+    }
+    if (!storeNameLatin || storeNameLatin.length > 80) {
+      return { success: false, error: 'الاسم اللاتيني مطلوب وبحد أقصى 80 محرفًا' }
+    }
+    if (storeTagline.length > 160 || storeDescription.length > 500) {
+      return { success: false, error: 'تجاوز أحد النصوص الحد المسموح به' }
+    }
+    if (!['ar', 'en'].includes(locale)) {
+      return { success: false, error: 'اللغة المختارة غير مدعومة' }
+    }
+    if (!/^[A-Z]{3}$/.test(currencyCode)) {
+      return { success: false, error: 'رمز العملة يجب أن يتكون من 3 أحرف' }
+    }
+
+    await prisma.storeSettings.upsert({
+      where: { id: 'singleton' },
+      update: { storeName, storeNameLatin, storeTagline, storeDescription, locale, currencyCode },
+      create: {
+        id: 'singleton',
+        storeName,
+        storeNameLatin,
+        storeTagline,
+        storeDescription,
+        locale,
+        currencyCode,
+        seoSearchPhrases: [],
+        updatedAt: new Date(),
+      },
+    })
+
+    revalidatePath('/')
+    revalidatePath('/admin/branding')
+    return { success: true }
+  } catch (error) {
+    console.error('Store branding save error:', error)
+    return { success: false, error: 'فشل في حفظ إعدادات المتجر' }
   }
 }
 

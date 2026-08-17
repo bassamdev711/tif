@@ -187,7 +187,7 @@ export default function ContactSettingsClient({ initialData }: { initialData: Co
                   name="emailAddress"
                   value={formData.emailAddress || ''}
                   onChange={handleChange}
-                  placeholder="info@tif-perfumes.com"
+                  placeholder="hello@example-store.com"
                   dir="ltr"
                   className="w-full bg-[#F9F7F2] border border-black/5 text-deep-green pl-10 pr-4 py-3 focus:outline-none focus:border-emerald/30 transition-colors text-right"
                 />

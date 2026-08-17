@@ -2,7 +2,7 @@ import Link from 'next/link'
 import prisma from '@/lib/prisma'
 import { Tag, Megaphone, Bell, Plus, TrendingUp, BarChart3, Mail } from 'lucide-react'
 
-export const metadata = { title: 'التسويق | TIF Admin' }
+export const metadata = { title: 'التسويق | لوحة التحكم' }
 
 export default async function MarketingPage() {
   // إحصائيات سريعة

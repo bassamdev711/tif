@@ -8,7 +8,13 @@ import { useCart } from "./CartProvider";
 import SearchModal from "./SearchModal";
 import { useCartAnimation } from "./CartAnimationProvider";
 
-export default function Navbar() {
+export default function Navbar({
+  storeName = 'متجرك',
+  storeNameLatin = 'YOUR STORE',
+}: {
+  storeName?: string
+  storeNameLatin?: string
+}) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -54,7 +60,7 @@ export default function Navbar() {
     { name: "الرئيسية", href: "/" },
     { name: "المجموعة", href: "/products" },
     { name: "من نحن", href: "/#about" },
-    { name: "تجربة طيف", href: "/#experience" },
+    { name: `تجربة ${storeName}`, href: "/#experience" },
     { name: "تواصل معنا", href: "/#contact" },
   ];
 
@@ -74,10 +80,10 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="relative z-50 flex items-center gap-1.5 md:gap-2 group">
           <span className="text-base md:text-xl font-bold tracking-widest text-accent transition-colors duration-300">
-            TIF
+            {storeNameLatin}
           </span>
           <span className="text-sm md:text-lg font-light text-surface tracking-[0.2em] transition-colors duration-300">
-            طيف
+            {storeName}
           </span>
         </Link>
 

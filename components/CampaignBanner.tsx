@@ -68,8 +68,8 @@ export default function CampaignBanner({ campaign }: { campaign: Campaign }) {
 
       <div className="relative max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-8 z-10">
         <div className="text-center md:text-right flex-1 space-y-4">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald/20 text-emerald-light border border-emerald/30 text-sm font-medium mb-2">
-            <span className="w-2 h-2 rounded-full bg-emerald animate-pulse"></span>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 text-accent border border-accent/30 text-sm font-medium mb-2">
+            <span className="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
             عرض خاص
           </div>
           <h2 className="text-3xl md:text-5xl font-black tracking-tight">{campaign.title}</h2>
@@ -93,11 +93,11 @@ export default function CampaignBanner({ campaign }: { campaign: Campaign }) {
         {/* Countdown Timer */}
         <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 bg-black/40 backdrop-blur-md p-3 sm:p-4 md:p-6 rounded-2xl border border-white/10 shrink-0 w-full sm:w-auto overflow-hidden">
           <TimeUnit value={timeLeft.days} label="يوم" />
-          <span className="text-lg sm:text-xl md:text-2xl font-black text-emerald">:</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-black text-accent">:</span>
           <TimeUnit value={timeLeft.hours} label="ساعة" />
-          <span className="text-lg sm:text-xl md:text-2xl font-black text-emerald">:</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-black text-accent">:</span>
           <TimeUnit value={timeLeft.minutes} label="دقيقة" />
-          <span className="text-lg sm:text-xl md:text-2xl font-black text-emerald">:</span>
+          <span className="text-lg sm:text-xl md:text-2xl font-black text-accent">:</span>
           <TimeUnit value={timeLeft.seconds} label="ثانية" />
         </div>
       </div>

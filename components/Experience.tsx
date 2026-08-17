@@ -13,7 +13,13 @@ type ExperienceData = {
   expBox2Desc?: string | null
 }
 
-export default function Experience({ data = {} }: { data?: ExperienceData }) {
+export default function Experience({
+  data = {},
+  brandName = 'متجرك',
+}: {
+  data?: ExperienceData
+  brandName?: string
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: containerRef,
@@ -33,25 +39,25 @@ export default function Experience({ data = {} }: { data?: ExperienceData }) {
           className="text-center mb-24"
         >
           <span className="text-accent tracking-[0.4em] uppercase text-xs font-bold mb-4 block">
-            {data.expTopTitle || "The Philosophy of Light"}
+            {data.expTopTitle || "منهجنا في الاختيار"}
           </span>
-          <h2 className="text-4xl md:text-5xl font-black text-foreground mb-6">{data.expMainTitle || "تجربة طيف"}</h2>
+          <h2 className="text-4xl md:text-5xl font-black text-foreground mb-6">{data.expMainTitle || `تجربة ${brandName}`}</h2>
           <div className="w-12 h-[2px] bg-brand mx-auto" />
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-16 lg:gap-24 items-center">
           <motion.div style={{ y: y1 }} className="space-y-12">
             <div className="bg-surface p-8 md:p-12 border-r-2 border-brand shadow-sm">
-              <h3 className="text-2xl text-foreground mb-4 font-black">{data.expBox1Title || "الضوء والبلور"}</h3>
+              <h3 className="text-2xl text-foreground mb-4 font-black">{data.expBox1Title || "اختيار واضح"}</h3>
               <p className="text-foreground/70 leading-relaxed font-light text-lg">
-                {data.expBox1Desc || "نحن لا نصنع عطوراً فحسب، بل نلتقط الضوء في زجاجات كريستالية. كل قطرة تعكس نقاء الروح وتضيء العتمة، لتخلق هالة من السحر حول من يرتديها."}
+                {data.expBox1Desc || "نقدم معلومات واضحة عن كل منتج، ونرتب التجربة بحيث تصل إلى الاختيار المناسب بأقل قدر من الحيرة."}
               </p>
             </div>
             
             <div className="bg-surface p-8 md:p-12 border-l-2 border-accent shadow-sm md:mr-12">
-              <h3 className="text-2xl text-foreground mb-4 font-black">{data.expBox2Title || "الصفاء المطلق"}</h3>
+              <h3 className="text-2xl text-foreground mb-4 font-black">{data.expBox2Title || "تفاصيل محسوبة"}</h3>
               <p className="text-foreground/70 leading-relaxed font-light text-lg">
-                {data.expBox2Desc || "مكوناتنا مستخلصة من أندر زهور الأرض، ممتزجة مع نسمات الهواء الباردة وقطرات الندى، لتعطي إحساساً بالبرودة والانتعاش الفاخر."}
+                {data.expBox2Desc || "نهتم بالتغليف، الدفع، المتابعة وخدمة العملاء حتى تكون كل خطوة متسقة مع وعد العلامة التجارية."}
               </p>
             </div>
           </motion.div>
@@ -62,7 +68,7 @@ export default function Experience({ data = {} }: { data?: ExperienceData }) {
               <div className="relative w-full h-full">
                 <Image
                   src="/imeg/photo_3_2026-05-13_05-39-00.jpg"
-                  alt="Experience"
+                  alt={`تجربة ${brandName}`}
                   fill
                   className="object-cover"
                 />

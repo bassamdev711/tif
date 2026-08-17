@@ -4,6 +4,7 @@ import { jwtVerify } from 'jose'
 import AdminSidebar from './components/AdminSidebar'
 import SetupRedirect from './components/SetupRedirect'
 import prisma from '@/lib/prisma'
+import { getStoreConfig } from '@/lib/store-config'
 
 async function requireAdmin() {
   const cookieStore = await cookies()
@@ -33,17 +34,20 @@ export default async function AdminLayout({
 }) {
   await requireAdmin()
 
-  const profile = await prisma.adminProfile.upsert({
+  const [profile, store] = await Promise.all([
+    prisma.adminProfile.upsert({
     where: { id: 'singleton' },
     update: {},
     create: {
       id: 'singleton',
       isSetupComplete: false
     }
-  })
+    }),
+    getStoreConfig(),
+  ])
 
   return (
-    <AdminSidebar profile={profile}>
+    <AdminSidebar profile={profile} store={store}>
       <SetupRedirect isSetupComplete={profile.isSetupComplete} />
       <div className="max-w-6xl mx-auto md:px-10 mt-8">
         <div className="px-4 md:px-0">

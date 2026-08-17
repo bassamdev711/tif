@@ -2,9 +2,11 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CheckoutClient from './CheckoutClient'
 import { Metadata } from 'next'
+import { getStoreConfig } from '@/lib/store-config'
 
-export const metadata: Metadata = {
-  title: 'إتمام الطلب | TIF طيف',
+export async function generateMetadata(): Promise<Metadata> {
+  const store = await getStoreConfig()
+  return { title: `إتمام الطلب | ${store.name}` }
 }
 
 export default function CheckoutPage() {

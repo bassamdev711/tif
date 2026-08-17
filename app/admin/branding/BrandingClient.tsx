@@ -3,7 +3,7 @@
 import { startTransition, useState, useRef, useEffect } from 'react'
 import Image from 'next/image'
 import QRCode from 'qrcode'
-import { uploadOgImage, uploadFavicon, saveStoreUrl } from './actions'
+import { uploadOgImage, uploadFavicon, saveStoreUrl, saveStoreBranding } from './actions'
 import { Image as ImageIcon, Globe, QrCode, Upload, CheckCircle, AlertCircle, Download, Loader2, Save } from 'lucide-react'
 
 interface BrandingClientProps {
@@ -12,6 +12,12 @@ interface BrandingClientProps {
     faviconUrl?: string | null
     storeUrl?: string | null
     storeName?: string | null
+    storeNameLatin?: string | null
+    storeTagline?: string | null
+    storeDescription?: string | null
+    logoUrl?: string | null
+    locale?: string | null
+    currencyCode?: string | null
   }
 }
 
@@ -19,6 +25,13 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
   const [ogPreview, setOgPreview] = useState<string | null>(initial.ogImageUrl || null)
   const [faviconPreview, setFaviconPreview] = useState<string | null>(initial.faviconUrl || null)
   const [storeUrl, setStoreUrl] = useState(initial.storeUrl || '')
+  const [storeName, setStoreName] = useState(initial.storeName || 'متجرك')
+  const [storeNameLatin, setStoreNameLatin] = useState(initial.storeNameLatin || 'YOUR STORE')
+  const [storeTagline, setStoreTagline] = useState(initial.storeTagline || '')
+  const [storeDescription, setStoreDescription] = useState(initial.storeDescription || '')
+  const [locale, setLocale] = useState(initial.locale || 'ar')
+  const [currencyCode, setCurrencyCode] = useState(initial.currencyCode || 'YER')
+  const [brandingLoading, setBrandingLoading] = useState(false)
   const [qrColor, setQrColor] = useState('#1a544a')
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   
@@ -58,7 +71,7 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
     setQrLoading(false)
   }
 
-  /** Draws the QR image on a canvas and overlays the logo (or TIF fallback) in the center */
+  /** Draws the QR image on a canvas and overlays the logo (or generic store fallback) in the center */
   const overlayLogoOnQr = (qrDataUrl: string, logoSrc?: string | null, color: string = '#1a544a'): Promise<string> => {
     return new Promise((resolve) => {
       const qrImg = new window.Image()
@@ -112,7 +125,7 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
             ctx.drawImage(img, cx - radius, cy - radius, logoAreaSize, logoAreaSize)
             ctx.restore()
           } else {
-            // Fallback: draw "TIF" text in brand font
+            // Fallback: draw the configured store mark in the brand font
             ctx.save()
             ctx.beginPath()
             ctx.arc(cx, cy, radius, 0, Math.PI * 2)
@@ -122,7 +135,7 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
             ctx.fillStyle = '#F9F7F2'
             ctx.textAlign = 'center'
             ctx.textBaseline = 'middle'
-            ctx.fillText('TIF', cx, cy)
+            ctx.fillText(storeNameLatin.slice(0, 4), cx, cy)
             ctx.restore()
           }
           drawFinish()
@@ -132,7 +145,7 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
           const logoImg = new window.Image()
           logoImg.crossOrigin = 'anonymous'
           logoImg.onload = () => drawLogo(logoImg)
-          logoImg.onerror = () => drawLogo(null) // fallback to TIF text
+          logoImg.onerror = () => drawLogo(null) // fallback to the configured store mark
           logoImg.src = logoSrc
         } else {
           drawLogo(null)
@@ -188,6 +201,24 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
     setFaviconLoading(false)
   }
 
+  const handleSaveBranding = async () => {
+    setBrandingLoading(true)
+    const res = await saveStoreBranding({
+      storeName,
+      storeNameLatin,
+      storeTagline,
+      storeDescription,
+      locale,
+      currencyCode,
+    })
+    if (res.success) {
+      showToast('تم حفظ إعدادات المتجر بنجاح', 'success')
+    } else {
+      showToast(res.error || 'حدث خطأ أثناء الحفظ', 'error')
+    }
+    setBrandingLoading(false)
+  }
+
   const handleSaveUrl = async () => {
     if (!storeUrl) return
     setUrlLoading(true)
@@ -205,7 +236,7 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
     if (!qrDataUrl) return
     const a = document.createElement('a')
     a.href = qrDataUrl
-    a.download = 'tif-qrcode-hd.png'
+    a.download = `${storeNameLatin.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'store'}-qrcode-hd.png`
     a.click()
   }
 
@@ -220,13 +251,60 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
 
       {/* Toast */}
       {toast && (
-        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm font-bold transition-all animate-in fade-in slide-in-from-top-4 ${toast.type === 'success' ? 'bg-brand text-white' : 'bg-red-600 text-white'}`}>
+        <div className={['fixed top-6 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm font-bold transition-all animate-in fade-in slide-in-from-top-4', toast.type === 'success' ? 'bg-brand text-white' : 'bg-red-600 text-white'].join(' ')}>
           {toast.type === 'success' ? <CheckCircle size={18} /> : <AlertCircle size={18} />}
           {toast.msg}
         </div>
       )}
 
-      {/* 1. OG Image */}
+      {/* 1. Store settings */}
+      <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-brand/5 rounded-lg text-brand">
+            <Save size={20} />
+          </div>
+          <div>
+            <h2 className="font-bold text-gray-800">إعدادات المتجر العامة</h2>
+            <p className="text-xs text-gray-500 mt-0.5">هذه البيانات هي أساس القالب ويمكن تغييرها لأي علامة تجارية.</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <label className="space-y-2">
+            <span className="block text-sm font-medium text-gray-700">اسم المتجر بالعربية</span>
+            <input value={storeName} onChange={(e) => setStoreName(e.target.value)} maxLength={80} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors" />
+          </label>
+          <label className="space-y-2">
+            <span className="block text-sm font-medium text-gray-700">الاسم اللاتيني</span>
+            <input value={storeNameLatin} onChange={(e) => setStoreNameLatin(e.target.value)} maxLength={80} dir="ltr" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors" />
+          </label>
+          <label className="space-y-2 md:col-span-2">
+            <span className="block text-sm font-medium text-gray-700">الوصف المختصر</span>
+            <input value={storeTagline} onChange={(e) => setStoreTagline(e.target.value)} maxLength={160} placeholder="منتجات مختارة بعناية، وتجربة تستحق التذكر." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors" />
+          </label>
+          <label className="space-y-2 md:col-span-2">
+            <span className="block text-sm font-medium text-gray-700">وصف المتجر لمحركات البحث</span>
+            <textarea value={storeDescription} onChange={(e) => setStoreDescription(e.target.value)} maxLength={500} rows={3} placeholder="اكتب وصفًا موجزًا لما يقدمه المتجر." className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors resize-y" />
+          </label>
+          <label className="space-y-2">
+            <span className="block text-sm font-medium text-gray-700">لغة الواجهة</span>
+            <select value={locale} onChange={(e) => setLocale(e.target.value)} className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors">
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </select>
+          </label>
+          <label className="space-y-2">
+            <span className="block text-sm font-medium text-gray-700">رمز العملة</span>
+            <input value={currencyCode} onChange={(e) => setCurrencyCode(e.target.value.toUpperCase())} maxLength={3} dir="ltr" placeholder="YER" className="w-full border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors" />
+          </label>
+        </div>
+        <button onClick={handleSaveBranding} disabled={brandingLoading} className="mt-6 inline-flex items-center gap-2 bg-brand text-white px-5 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-dark transition-colors disabled:opacity-60">
+          {brandingLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+          {brandingLoading ? 'جاري الحفظ...' : 'حفظ إعدادات المتجر'}
+        </button>
+      </div>
+
+      {/* 2. OG Image */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
@@ -347,14 +425,14 @@ export default function BrandingClient({ initial }: BrandingClientProps) {
             type="url"
             value={storeUrl}
             onChange={(e) => setStoreUrl(e.target.value)}
-            placeholder="https://tif-licw.vercel.app"
+            placeholder="https://example-store.com"
             dir="ltr"
-            className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+            className="flex-1 border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-brand transition-colors"
           />
           <button
             onClick={handleSaveUrl}
             disabled={urlLoading || !storeUrl}
-            className="flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-emerald-700 transition-colors disabled:opacity-60"
+            className="flex items-center gap-2 bg-brand text-white px-4 py-2.5 rounded-lg font-bold text-sm hover:bg-brand-dark transition-colors disabled:opacity-60"
           >
             {urlLoading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
             حفظ وتوليد

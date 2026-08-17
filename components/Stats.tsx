@@ -12,10 +12,10 @@ type StatsData = {
 }
 
 const defaultStats: StatItem[] = [
-  { value: "10K+", label: "عميل يثق بنا" },
-  { value: "50+", label: "مكون عطري نادر" },
-  { value: "100%", label: "زيوت عطرية نقية" },
-  { value: "24h", label: "ثبات العطر" },
+  { value: "01", label: "اختيار واضح" },
+  { value: "02", label: "خدمة موثوقة" },
+  { value: "03", label: "تجربة سهلة" },
+  { value: "04", label: "دعم مستمر" },
 ]
 
 export default function Stats({ data = {} }: { data?: StatsData }) {

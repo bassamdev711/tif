@@ -43,7 +43,7 @@ export default function LoginPage() {
           </div>
         </div>
 
-        <h1 className="text-3xl font-black text-center text-foreground mb-2">طيف</h1>
+        <h1 className="text-3xl font-black text-center text-foreground mb-2">لوحة المتجر</h1>
         <p className="text-center text-foreground/60 font-medium mb-8">
           تسجيل الدخول للوحة التحكم
         </p>

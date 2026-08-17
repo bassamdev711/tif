@@ -126,7 +126,7 @@ export default function LegalPagesClient({
                 <label className="block text-sm font-bold text-deep-green mb-2">نهاية رابط الصفحة (باللغة الإنجليزية وبدون مسافات) *</label>
                 <div className="flex rounded-md shadow-sm" dir="ltr">
                   <span className="inline-flex items-center rounded-l-md border border-r-0 border-black/10 px-3 text-gray-500 sm:text-sm bg-gray-50">
-                    https://tif.com/pages/
+                    https://example-store.com/pages/
                   </span>
                   <input 
                     type="text" 

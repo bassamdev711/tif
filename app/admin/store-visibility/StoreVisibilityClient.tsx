@@ -54,7 +54,7 @@ export default function StoreVisibilityClient({ initialStoreName, initialStoreDe
               required
               value={storeDescription} 
               onChange={e => setStoreDescription(e.target.value)}
-              placeholder="مثال: متجر متخصص في العطور الفاخرة والشرقية."
+              placeholder="مثال: متجر يقدم منتجات مختارة بجودة عالية وخدمة موثوقة."
               className="w-full rounded-md border-gray-300 border p-3 text-sm text-gray-900 bg-white focus:border-black focus:outline-none" 
             />
           </div>

@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma'
 import AnnouncementBarClient from './AnnouncementBarClient'
 
-export const metadata = { title: 'شريط الإعلانات | TIF Admin' }
+export const metadata = { title: 'شريط الإعلانات | لوحة التحكم' }
 
 type AnnouncementBar = {
   message: string
@@ -21,7 +21,7 @@ export default async function AnnouncementBarPage() {
   }
 
   const initial = {
-    message: bar?.message ?? 'مرحباً بكم في متجر طيف 🌿',
+    message: bar?.message ?? 'مرحباً بكم في متجرنا',
     linkText: bar?.linkText ?? '',
     linkUrl: bar?.linkUrl ?? '',
     bgColor: bar?.bgColor ?? '#1a544a',

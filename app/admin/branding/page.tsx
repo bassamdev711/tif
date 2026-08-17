@@ -14,6 +14,12 @@ export default async function BrandingPage() {
         faviconUrl: settings?.faviconUrl ?? null,
         storeUrl: settings?.storeUrl ?? null,
         storeName: settings?.storeName ?? null,
+        storeNameLatin: settings?.storeNameLatin ?? null,
+        storeTagline: settings?.storeTagline ?? null,
+        storeDescription: settings?.storeDescription ?? null,
+        logoUrl: settings?.logoUrl ?? null,
+        locale: settings?.locale ?? 'ar',
+        currencyCode: settings?.currencyCode ?? 'YER',
       }} 
     />
   )

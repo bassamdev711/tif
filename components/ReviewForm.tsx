@@ -59,7 +59,7 @@ export default function ReviewForm({ productId, onSuccess }: { productId?: strin
       <div className="absolute top-0 right-0 w-1 h-full bg-brand"></div>
       
       <h3 className="text-2xl font-black text-foreground mb-2">شاركنا رأيك</h3>
-      <p className="text-foreground/60 mb-8">يهمنا معرفة تجربتك {productId ? 'مع هذا العطر' : 'مع متجر طيف'}.</p>
+      <p className="text-foreground/60 mb-8">يهمنا معرفة تجربتك {productId ? 'مع هذا المنتج' : 'مع متجرنا'}.</p>
       
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Rating */}

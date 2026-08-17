@@ -11,6 +11,7 @@ import ProductsServer from "@/components/ProductsServer";
 import { getHomepageSettings } from "@/app/actions/homepage";
 import prisma from "@/lib/prisma";
 import CampaignBanner from "@/components/CampaignBanner";
+import { getStoreConfig } from "@/lib/store-config";
 
 // Dynamic Imports for components below the fold (Lazy Loading)
 const Experience = dynamic(() => import("@/components/Experience"), { ssr: true })
@@ -20,7 +21,10 @@ const Contact = dynamic(() => import("@/components/Contact"), { ssr: true })
 const Stats = dynamic(() => import("@/components/Stats"), { ssr: true })
 
 export default async function Home() {
-  const { data: settings } = await getHomepageSettings();
+  const [store, { data: settings }] = await Promise.all([
+    getStoreConfig(),
+    getHomepageSettings(),
+  ]);
   const safeSettings = settings || {};
 
   let activeCampaign: Awaited<ReturnType<typeof prisma.campaign.findFirst>> = null
@@ -39,19 +43,19 @@ export default async function Home() {
 
   return (
     <main className="min-h-screen bg-surface text-foreground overflow-hidden font-sans">
-      <Navbar />
+      <Navbar storeName={store.name} storeNameLatin={store.nameLatin} />
       
       {/* 1. Store Identity */}
-      <Hero data={safeSettings} />
+      <Hero data={safeSettings} brandName={store.name} brandNameLatin={store.nameLatin} />
       
       {/* Campaign Banner (if any) */}
       {activeCampaign && <CampaignBanner campaign={activeCampaign} />}
       
       {/* 2. Value Proposition */}
-      <About data={safeSettings} />
+      <About data={safeSettings} brandName={store.name} />
       
       {/* 3. Categories (Collections) */}
-      <CollectionsSection />
+      <CollectionsSection brandName={store.name} />
       
       {/* 4. Bestsellers */}
       <ProductsServer 
@@ -71,11 +75,11 @@ export default async function Home() {
       <ProductsServer 
         type="featured" 
         title="منتجات مختارة" 
-        subtitle="ترشيحات خبراء طيف" 
+        subtitle={`ترشيحات فريق ${store.name}`}
       />
       
       {/* 7. Why trust us */}
-      <Experience data={safeSettings} />
+      <Experience data={safeSettings} brandName={store.name} />
       
       {/* 8. Stats (Social Proof) */}
       <Stats data={safeSettings} />
@@ -84,10 +88,10 @@ export default async function Home() {
       <Testimonials />
       
       {/* 10. Call to action */}
-      <Newsletter />
+      <Newsletter storeName={store.name} />
       <Contact />
       
-      <Footer />
+      <Footer storeName={store.name} storeNameLatin={store.nameLatin} />
     </main>
   );
 }

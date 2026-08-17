@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next'
 
-const DEFAULT_SITE_URL = 'https://tif-lyart.vercel.app'
+const DEFAULT_SITE_URL = 'https://example-store.vercel.app'
 
 function getBaseUrl(): string {
   try {

@@ -16,7 +16,13 @@ const XIcon = (props: React.SVGProps<SVGSVGElement> & { size?: number }) => (
   </svg>
 );
 
-export default async function Footer() {
+export default async function Footer({
+  storeName = 'متجرك',
+  storeNameLatin = 'YOUR STORE',
+}: {
+  storeName?: string
+  storeNameLatin?: string
+}) {
   const currentYear = new Date().getFullYear();
   
   let legalPages: Array<{ id: string; slug: string; title: string }> = []
@@ -57,39 +63,39 @@ export default async function Footer() {
     // Render the configured fallbacks when the database is unavailable during build or runtime.
   }
 
-  const phone = contactSettings?.phoneNumber || '+967 777 777 777';
-  const showPhone = contactSettings?.showPhoneNumber !== false;
-  const email = contactSettings?.emailAddress || 'info@tif-perfumes.com';
-  const showEmail = contactSettings?.showEmailAddress !== false;
-  const address = contactSettings?.address || 'صنعاء، اليمن';
-  const showAddress = contactSettings?.showAddress !== false;
+  const phone = contactSettings?.phoneNumber || null;
+  const showPhone = Boolean(phone && contactSettings?.showPhoneNumber !== false);
+  const email = contactSettings?.emailAddress || null;
+  const showEmail = Boolean(email && contactSettings?.showEmailAddress !== false);
+  const address = contactSettings?.address || null;
+  const showAddress = Boolean(address && contactSettings?.showAddress !== false);
   
-  const instagram = contactSettings?.instagramUrl || '#';
-  const showInstagram = contactSettings?.showInstagram !== false;
-  const facebook = contactSettings?.facebookUrl || '#';
-  const showFacebook = contactSettings?.showFacebook !== false;
-  const twitter = contactSettings?.twitterUrl || '#';
-  const showTwitter = contactSettings?.showTwitter !== false;
-  const telegram = contactSettings?.telegramUrl || '#';
-  const showTelegram = contactSettings?.showTelegram !== false;
-  const threads = contactSettings?.threadsUrl || '#';
-  const showThreads = contactSettings?.showThreads !== false;
+  const instagram = contactSettings?.instagramUrl || null;
+  const showInstagram = Boolean(instagram && contactSettings?.showInstagram !== false);
+  const facebook = contactSettings?.facebookUrl || null;
+  const showFacebook = Boolean(facebook && contactSettings?.showFacebook !== false);
+  const twitter = contactSettings?.twitterUrl || null;
+  const showTwitter = Boolean(twitter && contactSettings?.showTwitter !== false);
+  const telegram = contactSettings?.telegramUrl || null;
+  const showTelegram = Boolean(telegram && contactSettings?.showTelegram !== false);
+  const threads = contactSettings?.threadsUrl || null;
+  const showThreads = Boolean(threads && contactSettings?.showThreads !== false);
   return (
     <footer className="bg-brand border-t border-accent/10 text-surface/80 pt-12 pb-8 md:pt-20 md:pb-10" dir="rtl">
       <div className="max-w-7xl mx-auto px-6 md:px-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 md:gap-12 mb-12 md:mb-16">
           <div className="md:col-span-1">
             <Link href="/" className="inline-block mb-6">
-              <span className="text-3xl font-bold tracking-widest text-accent">TIF</span>
-              <span className="text-2xl font-light text-surface ml-2 tracking-[0.2em]">طيف</span>
+              <span className="text-3xl font-bold tracking-widest text-accent">{storeNameLatin}</span>
+              <span className="text-2xl font-light text-surface ml-2 tracking-[0.2em]">{storeName}</span>
             </Link>
             <p className="text-sm leading-relaxed text-surface/80 mb-6">
-              نصنع العطور لتكون أكثر من مجرد رائحة، بل تجربة حسية تعكس هويتك وتترك أثراً لا يُنسى.
+              نختار منتجاتنا بعناية لنمنحك تجربة واضحة، موثوقة، وتترك أثرًا يستحق التذكر.
             </p>
             <div className="flex gap-4">
               {showInstagram && (
                 <a
-                  href={instagram}
+                  href={instagram || undefined}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="حسابنا على انستقرام"
@@ -100,7 +106,7 @@ export default async function Footer() {
               )}
               {showFacebook && (
                 <a
-                  href={facebook}
+                  href={facebook || undefined}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="حسابنا على فيسبوك"
@@ -111,7 +117,7 @@ export default async function Footer() {
               )}
               {showTwitter && (
                 <a
-                  href={twitter}
+                  href={twitter || undefined}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="حسابنا على تويتر إكس"
@@ -122,7 +128,7 @@ export default async function Footer() {
               )}
               {showTelegram && (
                 <a
-                  href={telegram}
+                  href={telegram || undefined}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="تواصل معنا عبر تيليجرام"
@@ -133,7 +139,7 @@ export default async function Footer() {
               )}
               {showThreads && (
                 <a
-                  href={threads}
+                  href={threads || undefined}
                   target="_blank"
                   rel="noreferrer"
                   aria-label="حسابنا على ثريدز"
@@ -148,7 +154,7 @@ export default async function Footer() {
           <div>
             <h3 className="text-surface font-bold mb-6 tracking-wider text-base">استكشف</h3>
             <ul className="space-y-4">
-              {['المجموعة الحصرية', 'العطور الرجالية', 'العطور النسائية', 'التصنيفات الخاصة'].map((item) => (
+              {['المجموعة', 'الأكثر مبيعًا', 'المنتجات الجديدة', 'التصنيفات'].map((item) => (
                 <li key={item}>
                   <Link href="/products" className="text-sm text-surface/80 hover:text-accent transition-colors">
                     {item}
@@ -207,13 +213,13 @@ export default async function Footer() {
               {showPhone && (
                 <li className="flex items-center gap-3">
                   <span className="text-accent"><Phone size={16} /></span>
-                  <span dir="ltr">{phone}</span>
+                  <a href={`tel:${phone}`} dir="ltr" className="hover:text-accent transition-colors">{phone}</a>
                 </li>
               )}
               {showEmail && (
                 <li className="flex items-center gap-3">
                   <span className="text-accent"><Mail size={16} /></span>
-                  {email}
+                  <a href={`mailto:${email}`} className="hover:text-accent transition-colors">{email}</a>
                 </li>
               )}
             </ul>
@@ -221,7 +227,7 @@ export default async function Footer() {
         </div>
 
         <div className="border-t border-accent/10 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-xs text-surface/60">
-          <p>© {currentYear} TIF Perfumes. جميع الحقوق محفوظة.</p>
+          <p>© {currentYear} {storeName}. جميع الحقوق محفوظة.</p>
           <div className="flex flex-wrap gap-4 md:gap-6 justify-center">
             {legalPages.map(page => (
               <Link key={page.id} href={`/pages/${page.slug}`} className="hover:text-accent transition-colors">

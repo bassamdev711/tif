@@ -90,7 +90,7 @@ export default function OrdersClient({ orders: initialOrders, stats }: { orders:
     const csvContent = [headers.join(','), ...orders.map(o => [o.orderNumber || o.id, format(new Date(o.createdAt), 'yyyy-MM-dd HH:mm'), `"${o.customerName}"`, o.customerPhone, o.status, o.paymentStatus, o.totalAmount].join(','))].join('\n')
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = `طلبات_طيف_${format(new Date(), 'yyyy-MM-dd')}.csv`
+    const a = document.createElement('a'); a.href = url; a.download = `orders_${format(new Date(), 'yyyy-MM-dd')}.csv`
     document.body.appendChild(a); a.click(); document.body.removeChild(a)
     showToast('success', 'تم تصدير الطلبات بنجاح')
   }

@@ -191,7 +191,7 @@ export default function InboxPage() {
                 
                 <div className="mt-8 pt-8 border-t border-black/5">
                   <a 
-                    href={`mailto:${selectedMessage.email}?subject=رد من عطور طيف&body=مرحباً ${selectedMessage.name}،%0D%0A%0D%0Aرداً على رسالتك:%0D%0A"${selectedMessage.message}"%0D%0A%0D%0A`}
+                    href={`mailto:${selectedMessage.email}?subject=رد من المتجر&body=مرحباً ${selectedMessage.name}،%0D%0A%0D%0Aرداً على رسالتك:%0D%0A"${selectedMessage.message}"%0D%0A%0D%0A`}
                     className="inline-flex items-center gap-2 bg-emerald text-ivory font-bold px-6 py-3 rounded-md hover:bg-deep-green transition-colors"
                   >
                     <Mail size={18} />

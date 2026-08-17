@@ -5,12 +5,13 @@ import CampaignQRCode from '../../CampaignQRCode'
 import ProductSelector from '../../ProductSelector'
 import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
+import { getSiteUrl, getStoreConfig } from '@/lib/store-config'
 
-export const metadata = { title: 'تعديل الحملة | TIF Admin' }
+export const metadata = { title: 'تعديل الحملة | لوحة التحكم' }
 
 export default async function EditCampaignPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  
+  const store = await getStoreConfig()
   const campaign = await prisma.campaign.findUnique({
     where: { id },
     include: { products: { select: { id: true } } }
@@ -190,9 +191,9 @@ export default async function EditCampaignPage({ params }: { params: Promise<{ i
       </form>
       
       {/* Campaign QR Code */}
-      <CampaignQRCode 
-        url={`https://tif-lyart.vercel.app/campaigns/${campaign.slug || campaign.id}`} 
-        logoUrl={campaign.imageUrl} 
+      <CampaignQRCode
+        url={new URL(`/campaigns/${campaign.slug || campaign.id}`, getSiteUrl(store.storeUrl)).toString()}
+        logoUrl={store.logoUrl}
       />
     </div>
   )

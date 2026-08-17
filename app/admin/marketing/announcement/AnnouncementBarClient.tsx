@@ -98,7 +98,7 @@ export default function AnnouncementBarClient({ initial }: AnnouncementBarPageCl
               required
               defaultValue={initial.message}
               onChange={(e) => setPreview(p => ({ ...p, message: e.target.value }))}
-              placeholder="مثال: 🎉 خصم 20% على جميع العطور! استخدم كود: SUMMER20"
+              placeholder="مثال: خصم 20% على جميع المنتجات! استخدم الكود: SUMMER20"
               className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald bg-white"
             />
           </div>
@@ -180,7 +180,7 @@ export default function AnnouncementBarClient({ initial }: AnnouncementBarPageCl
           <p className="text-xs font-bold text-gray-500 mb-3">ألوان جاهزة</p>
           <div className="flex flex-wrap gap-2">
             {[
-              { bg: '#1a544a', text: '#ffffff', label: 'أخضر طيف' },
+              { bg: '#1a544a', text: '#ffffff', label: 'لون العلامة' },
               { bg: '#c9a756', text: '#1a1a1a', label: 'ذهبي' },
               { bg: '#0f302a', text: '#ffffff', label: 'أخضر داكن' },
               { bg: '#dc2626', text: '#ffffff', label: 'أحمر' },

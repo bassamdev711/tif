@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { LayoutDashboard, Package, Layers, CreditCard, ArrowRight, ShoppingCart, Truck, FileText, Megaphone, Search, Menu, X, Phone, Inbox, MessageSquare, Activity, Palette, Settings, User, Bell } from 'lucide-react'
 import LogoutButton from './LogoutButton'
+import type { StoreConfig } from '@/lib/store-config'
 
 type AdminProfile = {
   name: string
@@ -13,12 +14,16 @@ type AdminProfile = {
 }
 
 export default function AdminSidebar({ 
-  profile, 
-  children 
-}: { 
+  profile,
+  store,
+  children,
+}: {
   profile?: AdminProfile
+  store?: Pick<StoreConfig, 'name' | 'nameLatin' | 'logoUrl'>
   children: React.ReactNode
 }) {
+  const storeName = store?.name || 'متجرك'
+  const storeNameLatin = store?.nameLatin || 'YOUR STORE'
   const [isOpen, setIsOpen] = useState(false)
   const pathname = usePathname()
 
@@ -61,7 +66,7 @@ export default function AdminSidebar({
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
           <div>
-            <h1 className="text-lg font-black tracking-widest text-gold leading-none">TIF ADMIN</h1>
+            <h1 className="text-lg font-black tracking-widest text-gold leading-none">{storeNameLatin} ADMIN</h1>
           </div>
         </div>
         {profile && (
@@ -96,8 +101,8 @@ export default function AdminSidebar({
         `}>
           <div className="p-6 hidden md:block">
             <Link href="/admin">
-              <h1 className="text-2xl font-black tracking-widest text-gold mb-1">TIF ADMIN</h1>
-              <p className="text-[10px] text-ivory/50 uppercase tracking-[0.2em]">لوحة تحكم طيف</p>
+              <h1 className="text-2xl font-black tracking-widest text-gold mb-1">{storeNameLatin} ADMIN</h1>
+              <p className="text-[10px] text-ivory/50 uppercase tracking-[0.2em]">لوحة تحكم {storeName}</p>
             </Link>
 
             {profile && (

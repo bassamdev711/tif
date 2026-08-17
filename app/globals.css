@@ -1,31 +1,32 @@
 @import "tailwindcss";
 
+@import "./brand-theme.css";
+
 /*
-  ══════════════════════════════════════════════════════════════
-  لتغيير هوية المتجر: عدّل brand-theme.css ثم انسخ القيم هنا ↓
-  ══════════════════════════════════════════════════════════════
+  Design tokens are mapped from brand-theme.css so every storefront
+  component uses one source of truth for the visual identity.
 */
 @theme {
   /* ── القيم الأساسية (مصدرها brand-theme.css) ── */
-  --color-brand:      #123C35;
-  --color-accent:     #C8A45D;
-  --color-surface:    #F5F1E8;
-  --color-foreground: #202522;
+  --color-brand:      var(--brand-color);
+  --color-accent:     var(--brand-accent);
+  --color-surface:    var(--brand-surface);
+  --color-foreground: var(--brand-foreground);
 
   /* ── مشتقات تلقائية ── */
-  --color-brand-hover:       color-mix(in srgb, #123C35 80%, black);
-  --color-brand-light:       color-mix(in srgb, #123C35 15%, white);
-  --color-brand-dark:        color-mix(in srgb, #123C35 60%, black);
-  --color-accent-light:      color-mix(in srgb, #C8A45D 70%, white);
-  --color-accent-dark:       color-mix(in srgb, #C8A45D 70%, black);
-  --color-surface-alt:       color-mix(in srgb, #F5F1E8 95%, black);
-  --color-foreground-dark:   color-mix(in srgb, #202522 40%, black);
+  --color-brand-hover:       color-mix(in srgb, var(--brand-color) 80%, black);
+  --color-brand-light:       color-mix(in srgb, var(--brand-color) 15%, white);
+  --color-brand-dark:        color-mix(in srgb, var(--brand-color) 60%, black);
+  --color-accent-light:      color-mix(in srgb, var(--brand-accent) 70%, white);
+  --color-accent-dark:       color-mix(in srgb, var(--brand-accent) 70%, black);
+  --color-surface-alt:       color-mix(in srgb, var(--brand-surface) 95%, black);
+  --color-foreground-dark:   color-mix(in srgb, var(--brand-foreground) 40%, black);
 
   /* ── خاص بالرسومات / الزجاجة ── */
-  --color-bottle-brand-start: color-mix(in srgb, #123C35 65%, black);
-  --color-bottle-brand-end:   color-mix(in srgb, #123C35 30%, black);
-  --color-bottle-cap-light:   color-mix(in srgb, #C8A45D 85%, white);
-  --color-bottle-cap-dark:    color-mix(in srgb, #C8A45D 60%, black);
+  --color-bottle-brand-start: color-mix(in srgb, var(--brand-color) 65%, black);
+  --color-bottle-brand-end:   color-mix(in srgb, var(--brand-color) 30%, black);
+  --color-bottle-cap-light:   color-mix(in srgb, var(--brand-accent) 85%, white);
+  --color-bottle-cap-dark:    color-mix(in srgb, var(--brand-accent) 60%, black);
 
   /* ── خطوط وحركات ── */
   --font-sans: var(--font-tajawal), Arial, sans-serif;
@@ -38,10 +39,10 @@
   }
 
   /* ── أسماء بديلة للوحة التحكم (تُعيَّن على الهوية الجديدة تلقائياً) ── */
-  --color-emerald:    #123C35;  /* كان أخضر — الآن أخضر زمردي داكن */
-  --color-gold:       #C8A45D;  /* ذهبي فاخر */
-  --color-ivory:      #F5F1E8;  /* عاجي دافئ */
-  --color-deep-green: #202522;  /* أسود مخضر */
+  --color-emerald:    var(--brand-color);
+  --color-gold:       var(--brand-accent);
+  --color-ivory:      var(--brand-surface);
+  --color-deep-green: var(--brand-foreground);
 }
 
 :root {
@@ -86,7 +87,7 @@ body.is-admin {
 @media (max-width: 767px) {
   :root {
     /* Touch targets — minimum 36px for secondary, 40px for primary */
-    --mobile-btn-h-sm:   2rem;      /* 32px  secondary/icon buttons */
+    --mobile-btn-h-sm:   2.25rem;   /* 36px  secondary/icon buttons */
     --mobile-btn-h-md:   2.25rem;   /* 36px  standard buttons       */
     --mobile-btn-h-lg:   2.5rem;    /* 40px  primary CTA buttons    */
 
@@ -109,6 +110,15 @@ body.is-admin {
 .mobile-contain {
   max-width: 100%;
   overflow-x: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* Custom Scrollbar */

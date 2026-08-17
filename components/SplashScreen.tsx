@@ -3,27 +3,36 @@
 import { startTransition, useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-export default function SplashScreen() {
+interface SplashScreenProps {
+  storeName?: string
+  storeNameLatin?: string
+}
+
+export default function SplashScreen({
+  storeName = 'متجرك',
+  storeNameLatin = 'YOUR STORE',
+}: SplashScreenProps) {
   const [showSplash, setShowSplash] = useState(false)
 
   useEffect(() => {
     // التحقق مما إذا كان المستخدم قد رأى الشاشة في هذه الجلسة
-    const hasSeenSplash = sessionStorage.getItem('tif_splash_seen')
+    const splashKey = `store_splash_seen:${storeNameLatin || storeName}`
+    const hasSeenSplash = sessionStorage.getItem(splashKey)
     
     if (!hasSeenSplash) {
       startTransition(() => {
         setShowSplash(true)
       })
-      sessionStorage.setItem('tif_splash_seen', 'true')
+      sessionStorage.setItem(splashKey, 'true')
       
-      // إخفاء الشاشة بعد انتهاء الحركات (حوالي 3.5 ثواني)
+      // إبقاء شاشة البداية قصيرة حتى لا تعيق الوصول للمحتوى.
       const timer = setTimeout(() => {
         setShowSplash(false)
-      }, 3500)
+      }, 2000)
       
       return () => clearTimeout(timer)
     }
-  }, [])
+  }, [storeName, storeNameLatin])
 
   return (
     <AnimatePresence>
@@ -83,7 +92,7 @@ export default function SplashScreen() {
             className="absolute w-64 h-64 bg-accent/20 rounded-full blur-2xl"
           />
 
-          {/* شعار TIF الذي ينبثق */}
+          {/* شعار المتجر الذي ينبثق */}
           <motion.div
             initial={{ opacity: 0, scale: 0.8, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -103,11 +112,18 @@ export default function SplashScreen() {
                 className="absolute top-0 w-[50%] h-full bg-gradient-to-r from-transparent via-white/20 to-transparent skew-x-[-20deg]"
               />
               
-              <span className="text-accent font-black text-4xl tracking-widest leading-none mb-2">TIF</span>
+              <span className="text-accent font-black text-2xl sm:text-3xl tracking-widest leading-none mb-2 text-center">{storeNameLatin}</span>
               <div className="w-10 h-[1px] bg-accent/50 mb-2" />
-              <span className="text-surface font-light text-sm tracking-[0.2em]">طيف</span>
+              <span className="text-surface font-light text-sm tracking-[0.2em] text-center">{storeName}</span>
             </div>
           </motion.div>
+          <button
+            type="button"
+            onClick={() => setShowSplash(false)}
+            className="absolute bottom-8 z-10 rounded-full border border-surface/30 px-4 py-2 text-xs text-surface/80 transition-colors hover:border-accent hover:text-accent"
+          >
+            تخطي
+          </button>
         </motion.div>
       )}
     </AnimatePresence>

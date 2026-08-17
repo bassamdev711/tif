@@ -64,7 +64,7 @@ export default function CartClient() {
                         sizes="128px"
                       />
                     ) : (
-                      <div className="text-accent/30 text-2xl">طيف</div>
+                      <div className="text-accent/30 text-2xl">متجرنا</div>
                     )}
                   </div>
                   

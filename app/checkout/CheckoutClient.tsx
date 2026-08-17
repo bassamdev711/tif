@@ -102,7 +102,7 @@ export default function CheckoutClient() {
         <h1 className="text-3xl font-black mb-4">السلة فارغة</h1>
         <p className="mb-8">قم بإضافة منتجات للسلة أولاً للمتابعة للدفع.</p>
         <Link href="/products" className="btn btn-primary btn-lg rounded-sm">
-          تصفح العطور
+          تصفح المنتجات
         </Link>
       </div>
     )
@@ -606,7 +606,7 @@ export default function CheckoutClient() {
                       {item.imageUrl ? (
                         <Image src={item.imageUrl} alt={item.name} fill className="object-cover mix-blend-multiply" />
                       ) : (
-                        <span className="text-accent">طيف</span>
+                        <span className="text-accent">متجرنا</span>
                       )}
                     </div>
                     <div className="flex-grow pt-1">

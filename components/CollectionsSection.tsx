@@ -14,7 +14,7 @@ type CollectionCard = {
 // Caching to improve speed
 export const revalidate = 3600 // revalidate every hour
 
-export default async function CollectionsSection() {
+export default async function CollectionsSection({ brandName = 'متجرك' }: { brandName?: string }) {
   let collections: CollectionCard[] = []
   
   try {
@@ -35,7 +35,7 @@ export default async function CollectionsSection() {
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 md:mb-16 gap-4">
           <div>
             <span className="text-accent tracking-[0.3em] uppercase text-xs font-bold mb-4 block">
-              تصنيفات طيف
+              تصنيفات {brandName}
             </span>
             <h2 className="text-3xl md:text-5xl font-black text-foreground">استكشف التصنيفات</h2>
           </div>
@@ -61,7 +61,7 @@ export default async function CollectionsSection() {
                 />
               ) : (
                 <div className="absolute inset-0 bg-brand/10 flex items-center justify-center">
-                  <span className="text-brand font-black text-3xl opacity-20">طيف</span>
+                  <span className="text-brand font-black text-3xl opacity-20">{brandName}</span>
                 </div>
               )}
               

@@ -162,8 +162,13 @@ model StoreSettings {
   shippingFee           Decimal  @default(0) @db.Decimal(10, 2)
   freeShippingThreshold Decimal  @default(0) @db.Decimal(10, 2)
   storeName             String?
+  storeNameLatin        String?
   storeDescription      String?
+  storeTagline          String?
+  logoUrl               String?
   seoSearchPhrases      String[]
+  locale                String   @default("ar")
+  currencyCode       String   @default("USD")
   showShippingInFooter  Boolean  @default(false)
   showReturnInFooter    Boolean  @default(false)
   shippingPolicyContent String?  @db.Text
@@ -307,28 +312,28 @@ model Review {
 model HomepageSettings {
   id                  String   @id @default("singleton")
   // Hero Section
-  heroTitle           String   @default("طيف")
+  heroTitle           String   @default("متجرك")
   heroSubtitle        String   @default("حضورٌ لا يُنسى.")
-  heroDescription     String   @default("اكتشف مجموعتنا الحصرية من العطور الفاخرة، المصممة بعناية فائقة لتمنحك تجربة حسية فريدة تدوم طويلاً.")
-  heroPrimaryButton   String   @default("اكتشف المجموعة")
-  heroSecondaryButton String   @default("قصة طيف")
+  heroDescription     String   @default("اكتشف مجموعتنا المختارة بعناية، المصممة لتمنحك تجربة تسوق واضحة وفريدة.")
+  heroPrimaryButton   String   @default("اكتشف المنتجات")
+  heroSecondaryButton String   @default("اعرف المزيد")
 
   // About Section
-  aboutTopTitle       String   @default("فلسفة طيف")
+  aboutTopTitle       String   @default("هوية المتجر")
   aboutMainTitle      String   @default("من نحن")
-  aboutQuote          String   @default("\"في تقاطع النقاء والفخامة، وُلدت طيف. لتكون أكثر من مجرد علامة تجارية، بل حالة من التسامي والندرة.\"")
-  aboutDescription    String   @default("حرفية استثنائية، إلهام كلاسيكي، وتكريس لأغلى المكونات العطرية. نحن نعيد تعريف الفخامة برؤية عصرية وهدوء لا مثيل له.")
+  aboutQuote          String   @default("\"نختار منتجاتنا بعناية لنقدم لك تجربة واضحة ومميزة.\"")
+  aboutDescription    String   @default("نقدم منتجات مختارة بعناية، وخدمة موثوقة، وتجربة تسوق بسيطة تناسب احتياجات عملائنا.")
 
   // Experience Section
-  expTopTitle         String   @default("The Philosophy of Light")
-  expMainTitle        String   @default("تجربة طيف")
-  expBox1Title        String   @default("الضوء والبلور")
-  expBox1Desc         String   @default("نحن لا نصنع عطوراً فحسب، بل نلتقط الضوء في زجاجات كريستالية. كل قطرة تعكس نقاء الروح وتضيء العتمة، لتخلق هالة من السحر حول من يرتديها.")
-  expBox2Title        String   @default("الصفاء المطلق")
-  expBox2Desc         String   @default("مكوناتنا مستخلصة من أندر زهور الأرض، ممتزجة مع نسمات الهواء الباردة وقطرات الندى، لتعطي إحساساً بالبرودة والانتعاش الفاخر.")
+  expTopTitle         String   @default("قيمنا")
+  expMainTitle        String   @default("تجربة تسوق أفضل")
+  expBox1Title        String   @default("اختيار واضح")
+  expBox1Desc         String   @default("نوضح تفاصيل منتجاتنا وأسعارها وخياراتها حتى تتخذ قرارك بثقة.")
+  expBox2Title        String   @default("خدمة موثوقة")
+  expBox2Desc         String   @default("نرافقك قبل الشراء وبعده من خلال قنوات تواصل واضحة وتجربة طلب آمنة.")
 
   // Stats Section (Stored as JSON array to allow flexible stats)
-  statsJson           String   @default("[{\"value\":\"10K+\",\"label\":\"عميل يثق بنا\"},{\"value\":\"50+\",\"label\":\"مكون عطري نادر\"},{\"value\":\"100%\",\"label\":\"زيوت عطرية نقية\"},{\"value\":\"24h\",\"label\":\"ثبات العطر\"}]")
+  statsJson           String   @default("[{\"value\":\"01\",\"label\":\"اختيار واضح\"},{\"value\":\"02\",\"label\":\"خدمة موثوقة\"},{\"value\":\"03\",\"label\":\"تجربة سهلة\"},{\"value\":\"04\",\"label\":\"دعم مستمر\"}]")
 
   updatedAt           DateTime @updatedAt
 }

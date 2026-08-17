@@ -8,6 +8,7 @@ import Footer from '@/components/Footer'
 import ProductDetailClient from './ProductDetailClient'
 import ProductReviews from '@/components/ProductReviews'
 import { getCurrency } from '@/lib/currency'
+import { getStoreConfig } from '@/lib/store-config'
 import ProductCard from '@/components/ProductCard'
 
 export const dynamic = 'force-dynamic'
@@ -19,11 +20,14 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const decodedSlug = decodeURIComponent(slug)
-  const product = await prisma.product.findUnique({ where: { slug: decodedSlug } })
+  const [product, store] = await Promise.all([
+    prisma.product.findUnique({ where: { slug: decodedSlug } }),
+    getStoreConfig(),
+  ])
   if (!product) return {}
   return {
-    title: `${product.name} | TIF طيف`,
-    description: product.description || `اكتشف ${product.name} من عطور طيف`,
+    title: `${product.name} | ${store.name}`,
+    description: product.description || `اكتشف ${product.name} من ${store.name}`,
   }
 }
 
