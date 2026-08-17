@@ -14,11 +14,10 @@ import {
   MessageCircle,
   Phone,
   Server,
-  Settings2,
   ShoppingBag,
   Users,
 } from 'lucide-react'
-import { createUsagePlan, getAnalyticsData, saveManualSubscription, saveUsagePlan } from './actions'
+import { getAnalyticsData } from './actions'
 
 type ResourceKey = 'database' | 'blob' | 'bandwidth'
 type ResourceData = {
@@ -28,23 +27,11 @@ type ResourceData = {
   source: string
   confidence: string
 }
-type PlanDraft = {
-  id: string
-  name: string
-  slug: string
-  price: string
-  currencyCode: string
-  databaseGB: string
-  blobGB: string
-  bandwidthGB: string
-  sortOrder: string
-  isActive: boolean
-}
-
 type AnalyticsData = {
   success: true
   visits: { today: number; todayViews: number; month: number; total: number }
   usage: {
+    fallback?: boolean
     subscription: { planId: string; status: string; startedAt: Date | string; renewsAt: Date | string | null; graceUntil: Date | string | null; notes: string | null }
     plan: { id: string; name: string; slug: string; price: string; currencyCode: string }
     resources: ResourceData[]
@@ -73,125 +60,17 @@ const resourceMeta: Record<ResourceKey, { label: string; description: string; ic
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
-  const [savingSubscription, setSavingSubscription] = useState(false)
-  const [subscriptionMessage, setSubscriptionMessage] = useState<string | null>(null)
-  const [subscriptionError, setSubscriptionError] = useState<string | null>(null)
-  const [planId, setPlanId] = useState('')
-  const [subscriptionStatus, setSubscriptionStatus] = useState('ACTIVE')
-  const [startedAt, setStartedAt] = useState('')
-  const [renewsAt, setRenewsAt] = useState('')
-  const [graceUntil, setGraceUntil] = useState('')
-  const [subscriptionNotes, setSubscriptionNotes] = useState('')
-  const [planDrafts, setPlanDrafts] = useState<Record<string, PlanDraft>>({})
-  const [newPlan, setNewPlan] = useState<Omit<PlanDraft, 'id'>>({ name: '', slug: '', price: '', currencyCode: 'USD', databaseGB: '1', blobGB: '5', bandwidthGB: '100', sortOrder: '10', isActive: true })
-  const [savingPlanId, setSavingPlanId] = useState<string | null>(null)
-  const [planMessage, setPlanMessage] = useState<string | null>(null)
-  const [planError, setPlanError] = useState<string | null>(null)
 
   useEffect(() => {
     getAnalyticsData().then((result) => {
       if (result.success) {
         const analytics = result as AnalyticsData
         setData(analytics)
-        setPlanDrafts(Object.fromEntries(analytics.usage.availablePlans.map((plan) => [plan.id, {
-          id: plan.id,
-          name: plan.name,
-          slug: plan.slug,
-          price: plan.price,
-          currencyCode: plan.currencyCode,
-          databaseGB: bytesToGBValue(plan.databaseLimitBytes),
-          blobGB: bytesToGBValue(plan.blobLimitBytes),
-          bandwidthGB: bytesToGBValue(plan.bandwidthLimitBytes),
-          sortOrder: String(plan.sortOrder),
-          isActive: plan.isActive,
-        }])))
-        setPlanId(analytics.usage.subscription.planId)
-        setSubscriptionStatus(analytics.usage.subscription.status)
-        setStartedAt(toLocalDateTime(analytics.usage.subscription.startedAt))
-        setRenewsAt(toLocalDateTime(analytics.usage.subscription.renewsAt))
-        setGraceUntil(toLocalDateTime(analytics.usage.subscription.graceUntil))
-        setSubscriptionNotes(analytics.usage.subscription.notes || '')
       }
       setLoading(false)
     }).catch(() => setLoading(false))
   }, [])
 
-  const refreshAnalytics = async () => {
-    const refreshed = await getAnalyticsData()
-    if (!refreshed.success) return
-    const analytics = refreshed as AnalyticsData
-    setData(analytics)
-    setPlanDrafts(Object.fromEntries(analytics.usage.availablePlans.map((plan) => [plan.id, {
-      id: plan.id,
-      name: plan.name,
-      slug: plan.id,
-      price: plan.price,
-      currencyCode: plan.currencyCode,
-      databaseGB: bytesToGBValue(plan.databaseLimitBytes),
-      blobGB: bytesToGBValue(plan.blobLimitBytes),
-      bandwidthGB: bytesToGBValue(plan.bandwidthLimitBytes),
-      sortOrder: '10',
-      isActive: true,
-    }])))
-  }
-
-  const handleSavePlan = async (id: string) => {
-    const draft = planDrafts[id]
-    if (!draft) return
-    setSavingPlanId(id)
-    setPlanMessage(null)
-    setPlanError(null)
-    try {
-      const result = await saveUsagePlan(draft)
-      if (!result.success) throw new Error(result.error)
-      await refreshAnalytics()
-      setPlanMessage('تم حفظ سعر وحصص الخطة.')
-    } catch (saveError) {
-      setPlanError(saveError instanceof Error ? saveError.message : 'تعذر حفظ الخطة.')
-    } finally {
-      setSavingPlanId(null)
-    }
-  }
-
-  const handleCreatePlan = async () => {
-    setSavingPlanId('new')
-    setPlanMessage(null)
-    setPlanError(null)
-    try {
-      const result = await createUsagePlan(newPlan)
-      if (!result.success) throw new Error(result.error)
-      setNewPlan({ name: '', slug: '', price: '', currencyCode: 'USD', databaseGB: '1', blobGB: '5', bandwidthGB: '100', sortOrder: '10', isActive: true })
-      await refreshAnalytics()
-      setPlanMessage('تمت إضافة الخطة الجديدة.')
-    } catch (saveError) {
-      setPlanError(saveError instanceof Error ? saveError.message : 'تعذر إضافة الخطة.')
-    } finally {
-      setSavingPlanId(null)
-    }
-  }
-
-  const handleSaveSubscription = async () => {
-    setSavingSubscription(true)
-    setSubscriptionMessage(null)
-    setSubscriptionError(null)
-    try {
-      const result = await saveManualSubscription({
-        planId,
-        status: subscriptionStatus,
-        startedAt,
-        renewsAt,
-        graceUntil,
-        notes: subscriptionNotes,
-      })
-      if (!result.success) throw new Error(result.error)
-      setSubscriptionMessage('تم تحديث الخطة والحصة يدويًا بنجاح.')
-      await refreshAnalytics()
-    } catch (saveError) {
-      setSubscriptionError(saveError instanceof Error ? saveError.message : 'تعذر تحديث الخطة اليدوية.')
-    } finally {
-      setSavingSubscription(false)
-    }
-  }
 
   if (loading) {
     return <div className="flex items-center justify-center min-h-[60vh]"><div className="w-8 h-8 border-4 border-brand border-t-transparent rounded-full animate-spin" /></div>
@@ -201,6 +80,9 @@ export default function AnalyticsPage() {
 
   const unreadLimit = data.usage.resources.filter((resource) => getPercentage(resource) >= 70)
   const supportPhone = data.contact.phoneNumber || data.contact.whatsappNumber
+  const currentPlan = data.usage.plan
+  const currentSubscription = data.usage.subscription
+  const isLegacyFallback = Boolean(data.usage.fallback)
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -255,82 +137,36 @@ export default function AnalyticsPage() {
       </section>
 
       <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-3 mb-6">
-          <div><h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2"><ShoppingBag className="w-5 h-5 text-brand" /> إدارة الخطة اليدوية</h2><p className="text-sm text-gray-500 mt-1">هذا القسم للمالك فقط. لا يوجد دفع آلي؛ حدّث الخطة بعد استلام الاتفاق مع العميل.</p></div>
-        </div>
-        {subscriptionError && <div className="rounded-xl bg-red-50 text-red-700 border border-red-100 p-3 text-sm font-bold mb-4">{subscriptionError}</div>}
-        {subscriptionMessage && <div className="rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 p-3 text-sm font-bold mb-4">{subscriptionMessage}</div>}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <label className="text-sm font-bold text-gray-700">الخطة<select value={planId} onChange={(event) => setPlanId(event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-3 font-normal bg-white"><option value="">اختر الخطة</option>{data.usage.availablePlans.map((plan) => <option key={plan.id} value={plan.id}>{plan.name} — {plan.price === '0' ? 'مجانية' : `${plan.price} ${plan.currencyCode}`}</option>)}</select></label>
-          <label className="text-sm font-bold text-gray-700">حالة الاشتراك<select value={subscriptionStatus} onChange={(event) => setSubscriptionStatus(event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-3 font-normal bg-white"><option value="ACTIVE">فعالة</option><option value="GRACE">فترة سماح</option><option value="SUSPENDED">موقوفة الرفع</option><option value="CANCELLED">ملغاة</option></select></label>
-          <label className="text-sm font-bold text-gray-700">بداية الخطة<input type="datetime-local" value={startedAt} onChange={(event) => setStartedAt(event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-3 font-normal" /></label>
-          <label className="text-sm font-bold text-gray-700">تاريخ التجديد<input type="datetime-local" value={renewsAt} onChange={(event) => setRenewsAt(event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-3 font-normal" /></label>
-          <label className="text-sm font-bold text-gray-700">نهاية فترة السماح<input type="datetime-local" value={graceUntil} onChange={(event) => setGraceUntil(event.target.value)} className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-3 font-normal" /></label>
-          <label className="text-sm font-bold text-gray-700 md:col-span-2">ملاحظات المالك<textarea value={subscriptionNotes} onChange={(event) => setSubscriptionNotes(event.target.value)} rows={3} placeholder="مثال: تمت الترقية يدويًا بعد التواصل بتاريخ..." className="mt-2 w-full rounded-xl border border-gray-200 px-3 py-3 font-normal resize-y" /></label>
-        </div>
-        <button onClick={handleSaveSubscription} disabled={savingSubscription || !planId} className="btn btn-primary mt-5 disabled:opacity-60">{savingSubscription ? 'جارٍ الحفظ...' : 'حفظ الخطة والحصة'}</button>
-      </section>
-
-      <section className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-3 mb-5">
-          <div><h2 className="text-lg font-semibold text-gray-800 flex items-center gap-2"><Settings2 className="w-5 h-5 text-brand" /> إعداد أسعار وحصص الخطط</h2><p className="text-sm text-gray-500 mt-1">اضبط الأسعار والحصص التي ستظهر للعميل. القيم بالجيجابايت، والتغيير لا يفعّل اشتراكًا تلقائيًا.</p></div>
-        </div>
-        {planError && <div className="rounded-xl bg-red-50 text-red-700 border border-red-100 p-3 text-sm font-bold mb-4">{planError}</div>}
-        {planMessage && <div className="rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 p-3 text-sm font-bold mb-4">{planMessage}</div>}
-        <div className="space-y-4">
-          {Object.values(planDrafts).map((draft) => (
-            <div key={draft.id} className="rounded-2xl border border-gray-100 bg-gray-50/70 p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-                <label className="text-xs font-bold text-gray-700">اسم الخطة<input value={draft.name} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, name: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" /></label>
-                <label className="text-xs font-bold text-gray-700">المعرّف اللاتيني<input value={draft.slug} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, slug: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" dir="ltr" /></label>
-                <label className="text-xs font-bold text-gray-700">السعر الشهري<input value={draft.price} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, price: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" inputMode="decimal" dir="ltr" /></label>
-                <label className="text-xs font-bold text-gray-700">العملة<input value={draft.currencyCode} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, currencyCode: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" dir="ltr" maxLength={3} /></label>
-                <label className="text-xs font-bold text-gray-700">قاعدة البيانات GB<input value={draft.databaseGB} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, databaseGB: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" inputMode="decimal" dir="ltr" /></label>
-                <label className="text-xs font-bold text-gray-700">الصور والملفات GB<input value={draft.blobGB} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, blobGB: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" inputMode="decimal" dir="ltr" /></label>
-                <label className="text-xs font-bold text-gray-700">النقل GB<input value={draft.bandwidthGB} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, bandwidthGB: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" inputMode="decimal" dir="ltr" /></label>
-                <label className="text-xs font-bold text-gray-700">ترتيب العرض<input value={draft.sortOrder} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, sortOrder: event.target.value } }))} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal" inputMode="numeric" dir="ltr" /></label>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-                <label className="inline-flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" checked={draft.isActive} onChange={(event) => setPlanDrafts((current) => ({ ...current, [draft.id]: { ...draft, isActive: event.target.checked } }))} /> إظهار الخطة للعملاء</label>
-                <button onClick={() => handleSavePlan(draft.id)} disabled={savingPlanId === draft.id} className="btn btn-primary disabled:opacity-60">{savingPlanId === draft.id ? 'جارٍ الحفظ...' : 'حفظ إعدادات الخطة'}</button>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 rounded-2xl border border-dashed border-gray-200 p-4">
-          <h3 className="font-bold text-gray-800">إضافة خطة جديدة</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 mt-3">
-            <input placeholder="اسم الخطة" value={newPlan.name} onChange={(event) => setNewPlan((current) => ({ ...current, name: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" />
-            <input placeholder="slug-latin" value={newPlan.slug} onChange={(event) => setNewPlan((current) => ({ ...current, slug: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" dir="ltr" />
-            <input placeholder="السعر" value={newPlan.price} onChange={(event) => setNewPlan((current) => ({ ...current, price: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" inputMode="decimal" dir="ltr" />
-            <input placeholder="العملة" value={newPlan.currencyCode} onChange={(event) => setNewPlan((current) => ({ ...current, currencyCode: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" maxLength={3} dir="ltr" />
-            <input placeholder="قاعدة البيانات GB" value={newPlan.databaseGB} onChange={(event) => setNewPlan((current) => ({ ...current, databaseGB: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" inputMode="decimal" dir="ltr" />
-            <input placeholder="الصور والملفات GB" value={newPlan.blobGB} onChange={(event) => setNewPlan((current) => ({ ...current, blobGB: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" inputMode="decimal" dir="ltr" />
-            <input placeholder="النقل GB" value={newPlan.bandwidthGB} onChange={(event) => setNewPlan((current) => ({ ...current, bandwidthGB: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" inputMode="decimal" dir="ltr" />
-            <input placeholder="ترتيب العرض" value={newPlan.sortOrder} onChange={(event) => setNewPlan((current) => ({ ...current, sortOrder: event.target.value }))} className="rounded-lg border border-gray-200 px-3 py-2 text-sm" inputMode="numeric" dir="ltr" />
+        <div className="flex items-start gap-3 mb-5">
+          <ShoppingBag className="w-5 h-5 text-brand mt-0.5" />
+          <div>
+            <h2 className="text-lg font-semibold text-gray-800">خطتك الحالية</h2>
+            <p className="text-sm text-gray-500 mt-1">تابع استهلاك متجرك واطلب الترقية عند الحاجة.</p>
           </div>
-          <button onClick={handleCreatePlan} disabled={savingPlanId === 'new'} className="btn btn-secondary mt-4 disabled:opacity-60">{savingPlanId === 'new' ? 'جارٍ الإضافة...' : 'إضافة الخطة'}</button>
         </div>
+        {isLegacyFallback && <div className="rounded-xl border border-blue-100 bg-blue-50 text-blue-800 p-4 text-sm leading-7 mb-5">يتم عرض القياسات الأساسية مؤقتًا. سيُحدّث النظام التفاصيل تلقائيًا عند تفعيل القياس التفصيلي، ولن يتوقف متجرك بسبب ذلك.</div>}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="rounded-xl bg-gray-50 p-4"><p className="text-xs text-gray-500">الخطة الحالية</p><p className="font-bold text-gray-900 mt-2">{currentPlan.name}</p></div>
+          <div className="rounded-xl bg-gray-50 p-4"><p className="text-xs text-gray-500">حالة الخدمة</p><p className="font-bold text-gray-900 mt-2">{getSubscriptionStatusLabel(currentSubscription.status)}</p></div>
+          {currentSubscription.renewsAt && <div className="rounded-xl bg-gray-50 p-4"><p className="text-xs text-gray-500">التجديد المتوقع</p><p className="font-bold text-gray-900 mt-2">{formatDate(currentSubscription.renewsAt)}</p></div>}
+        </div>
+        {currentSubscription.notes && !isLegacyFallback && <p className="text-sm text-gray-600 mt-5">{currentSubscription.notes}</p>}
+        {supportPhone && <div className="mt-5 rounded-xl border border-brand/10 bg-brand/5 p-4"><p className="text-sm text-gray-700">لترقية الحصة أو تجديد الخطة، تواصل مع مالك المنصة مباشرة.</p><ContactButtons phone={supportPhone} /></div>}
       </section>
 
       <section>
-        <div className="flex items-center gap-2 mb-4"><ShoppingBag className="w-5 h-5 text-brand" /><h2 className="text-lg font-semibold text-gray-800">الخطط والترقية اليدوية</h2></div>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        <div className="flex items-center gap-2 mb-4"><ShoppingBag className="w-5 h-5 text-brand" /><h2 className="text-lg font-semibold text-gray-800">الترقية والدعم</h2></div>
+        {data.usage.availablePlans.length > 0 ? <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {data.usage.availablePlans.map((plan) => (
-            <div key={plan.id} className={`rounded-2xl border p-6 ${plan.id === data.usage.plan.id ? 'border-brand bg-brand/5' : 'border-gray-100 bg-white'} shadow-sm`}>
-              <div className="flex items-start justify-between gap-3">
-                <div><h3 className="font-bold text-gray-900">{plan.name}</h3><p className="text-sm text-gray-500 mt-1">{plan.id === data.usage.plan.id ? 'خطتك الحالية' : 'متاحة للترقية'}</p></div>
-                {plan.id === data.usage.plan.id && <CheckCircle2 className="text-brand" size={21} />}
-              </div>
+            <div key={plan.id} className={`rounded-2xl border p-6 ${plan.id === currentPlan.id ? 'border-brand bg-brand/5' : 'border-gray-100 bg-white'} shadow-sm`}>
+              <div className="flex items-start justify-between gap-3"><div><h3 className="font-bold text-gray-900">{plan.name}</h3><p className="text-sm text-gray-500 mt-1">{plan.id === currentPlan.id ? 'خطتك الحالية' : 'متاحة للترقية'}</p></div>{plan.id === currentPlan.id && <CheckCircle2 className="text-brand" size={21} />}</div>
               <p className="text-2xl font-black text-gray-900 mt-5">{plan.price === '0' ? 'مجانية' : `${plan.price} ${plan.currencyCode}`}<span className="text-sm font-medium text-gray-500">{plan.price === '0' ? '' : ' / شهر'}</span></p>
-              <p className="text-sm text-gray-600 mt-4">صور وملفات: <strong>{formatBytes(plan.blobLimitBytes)}</strong></p>
-              <p className="text-sm text-gray-600 mt-1">قاعدة البيانات: <strong>{formatBytes(plan.databaseLimitBytes)}</strong></p>
-              <p className="text-sm text-gray-600 mt-1">نقل البيانات: <strong>{formatBytes(plan.bandwidthLimitBytes)}</strong></p>
-              {plan.id !== data.usage.plan.id && supportPhone && <ContactButtons phone={supportPhone} />}
+              <p className="text-sm text-gray-600 mt-4">صور وملفات: <strong>{formatBytes(plan.blobLimitBytes)}</strong></p><p className="text-sm text-gray-600 mt-1">قاعدة البيانات: <strong>{formatBytes(plan.databaseLimitBytes)}</strong></p><p className="text-sm text-gray-600 mt-1">نقل البيانات: <strong>{formatBytes(plan.bandwidthLimitBytes)}</strong></p>
+              {plan.id !== currentPlan.id && supportPhone && <ContactButtons phone={supportPhone} />}
             </div>
           ))}
-        </div>
-        <div className="mt-5 rounded-xl bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600">الترقية والتجديد يدويان في هذه المرحلة. عند قرب النفاذ تواصل مع مالك المنصة، وسيتم تحديث الخطة والحصة وتاريخ التجديد من جهة الإدارة.</div>
+        </div> : <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-600">لا توجد خطط إضافية معروضة حاليًا. إذا احتجت مساحة أكبر أو نقل بيانات إضافيًا، تواصل مع مالك المنصة.</div>}
+        <div className="mt-5 rounded-xl bg-gray-50 border border-gray-100 p-4 text-sm text-gray-600">الترقية والتجديد يتمان بالتنسيق مع مالك المنصة. ستبقى واجهة المتجر وبياناتك متاحة، ويتم إيقاف الرفع الجديد فقط عند بلوغ حد التخزين حتى تتم معالجة الخطة.</div>
       </section>
     </div>
   )
@@ -366,16 +202,18 @@ function getPercentage(resource: ResourceData) {
   return (resource.usedBytes / resource.limitBytes) * 100
 }
 
-function bytesToGBValue(bytes: number) {
-  return (bytes / (1024 * 1024 * 1024)).toFixed(2).replace(/\.00$/, '')
+function getSubscriptionStatusLabel(status: string) {
+  if (status === 'GRACE') return 'فترة سماح'
+  if (status === 'SUSPENDED') return 'الرفع موقوف مؤقتًا'
+  if (status === 'CANCELLED') return 'منتهية'
+  return 'فعالة'
 }
 
-function toLocalDateTime(value: Date | string | null) {
+function formatDate(value: Date | string | null) {
   if (!value) return ''
   const date = new Date(value)
   if (Number.isNaN(date.getTime())) return ''
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-  return local.toISOString().slice(0, 16)
+  return new Intl.DateTimeFormat('ar', { dateStyle: 'medium', timeStyle: 'short' }).format(date)
 }
 
 function formatBytes(bytes: number) {
