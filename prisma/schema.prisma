@@ -358,3 +358,84 @@ model AdminSubscription {
   updatedAt DateTime @updatedAt
 }
 
+model UsagePlan {
+  id                    String             @id @default(cuid())
+  name                  String
+  slug                  String             @unique
+  price                 Decimal            @default(0) @db.Decimal(10, 2)
+  currencyCode          String             @default("USD")
+  databaseLimitBytes    BigInt
+  blobLimitBytes        BigInt
+  bandwidthLimitBytes   BigInt
+  isActive              Boolean            @default(true)
+  sortOrder             Int                @default(0)
+  createdAt             DateTime           @default(now())
+  updatedAt             DateTime           @updatedAt
+  subscriptions         StoreSubscription[]
+}
+
+model StoreSubscription {
+  id          String    @id @default("singleton")
+  planId      String?
+  plan        UsagePlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+  status      String    @default("ACTIVE")
+  startedAt   DateTime  @default(now())
+  renewsAt    DateTime?
+  graceUntil  DateTime?
+  notes       String?   @db.Text
+  updatedBy   String?
+  updatedAt   DateTime  @updatedAt
+}
+
+model UsageSnapshot {
+  id             String   @id @default(cuid())
+  resource       String
+  usedBytes      BigInt
+  limitBytes     BigInt
+  source         String
+  confidence     String   @default("measured")
+  periodStart    DateTime
+  periodEnd      DateTime?
+  measuredAt     DateTime @default(now())
+
+  @@unique([resource, periodStart])
+  @@index([resource, measuredAt])
+}
+
+model StorageObject {
+  id          String    @id @default(cuid())
+  url         String    @unique
+  storageKey  String?
+  sizeBytes   BigInt
+  kind        String    @default("other")
+  isDeleted   Boolean   @default(false)
+  reservedUntil DateTime?
+  createdAt   DateTime  @default(now())
+  deletedAt   DateTime?
+
+  @@index([kind, isDeleted])
+  @@index([createdAt])
+}
+
+model AdminNotificationPreference {
+  id                 String   @id @default("singleton")
+  orderNotifications  Boolean  @default(true)
+  limitNotifications  Boolean  @default(true)
+  pushEnabled         Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+}
+
+model InAppNotification {
+  id          String    @id @default(cuid())
+  type        String
+  title       String
+  body        String    @db.Text
+  url         String?
+  dedupeKey   String    @unique
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([readAt, createdAt])
+  @@index([type, createdAt])
+}
+

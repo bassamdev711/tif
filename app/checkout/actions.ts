@@ -7,7 +7,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 import { CheckoutData } from '@/components/CheckoutProvider'
 import { CartItem } from '@/components/CartProvider'
 import { validateCouponCode } from '@/app/admin/marketing/coupons/actions'
-import { sendWebPushNotification } from '@/lib/web-push'
+import { createAdminNotification } from '@/lib/admin-notifications'
 import { createOrderUploadToken, verifyOrderUploadToken } from '@/lib/order-upload-token'
 import { createOrderTrackingToken } from '@/lib/order-tracking-token'
 
@@ -260,15 +260,13 @@ export async function createOrder(
       return newOrder
     })
 
-    try {
-      await sendWebPushNotification(
-        'طلب جديد',
-        `طلب جديد رقم ${order.orderNumber} بقيمة ${finalTotal} ${paymentSettings?.currency || 'ر.س'}`,
-        `/admin/orders/${order.id}`,
-      )
-    } catch (pushError) {
-      console.error('Failed to send web push notification:', pushError)
-    }
+    await createAdminNotification({
+      type: 'order',
+      title: 'طلب جديد',
+      body: `طلب جديد رقم ${order.orderNumber} بقيمة ${finalTotal} ${paymentSettings?.currency || 'ر.س'}`,
+      url: `/admin/orders/${order.id}`,
+      dedupeKey: `order:${order.id}:created`,
+    })
 
     const paymentUploadToken = RECEIPT_PAYMENT_METHODS.has(checkoutData.paymentMethod)
       ? await createOrderUploadToken(order.id)
@@ -318,15 +316,13 @@ export async function updateOrderPaymentProof(
       },
     })
 
-    try {
-      await sendWebPushNotification(
-        'إثبات دفع جديد',
-        `تم رفع إثبات دفع للطلب رقم ${currentOrder.orderNumber}`,
-        `/admin/orders/${currentOrder.id}`,
-      )
-    } catch (pushError) {
-      console.error('Failed to send payment proof notification:', pushError)
-    }
+    await createAdminNotification({
+      type: 'order',
+      title: 'إثبات دفع جديد',
+      body: `تم رفع إثبات دفع للطلب رقم ${currentOrder.orderNumber}`,
+      url: `/admin/orders/${currentOrder.id}`,
+      dedupeKey: `order:${currentOrder.id}:payment-proof`,
+    })
 
     return { success: true }
   } catch (error) {

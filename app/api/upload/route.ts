@@ -1,9 +1,10 @@
-import { del, put } from '@vercel/blob'
+import { del } from '@vercel/blob'
 import { NextRequest, NextResponse } from 'next/server'
 import { verifyAdmin } from '@/lib/auth'
 import { verifyOrderUploadToken } from '@/lib/order-upload-token'
 import prisma from '@/lib/prisma'
 import { checkRateLimit } from '@/lib/rate-limit'
+import { UsageLimitError, markBlobDeleted, putTrackedBlob } from '@/lib/usage'
 import crypto from 'crypto'
 
 export const runtime = 'nodejs'
@@ -118,12 +119,12 @@ export async function POST(request: NextRequest) {
   let uploadedUrl: string | undefined
 
   try {
-    const blob = await put(filename, buffer, {
+    const blob = await putTrackedBlob(filename, buffer, {
       access: isAdmin ? 'public' : 'private',
       token: blobToken,
       contentType: detectedType.mime,
       cacheControlMaxAge: isAdmin ? 31536000 : 0,
-    })
+    }, isAdmin ? 'product' : 'receipt', buffer.length)
     uploadedUrl = blob.url
 
     if (!isAdmin) {
@@ -141,6 +142,7 @@ export async function POST(request: NextRequest) {
 
       if (updated.count !== 1) {
         await del(uploadedUrl, { token: blobToken })
+        await markBlobDeleted(uploadedUrl)
         return NextResponse.json({ error: 'لم يعد الطلب متاحاً لإرفاق الإيصال' }, { status: 409 })
       }
     }
@@ -152,7 +154,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: uploadedUrl, warning })
   } catch (error) {
     if (uploadedUrl && !isAdmin) {
-      try { await del(uploadedUrl, { token: blobToken }) } catch (cleanupError) { console.error('Blob cleanup failed:', cleanupError) }
+      try {
+        await del(uploadedUrl, { token: blobToken })
+        await markBlobDeleted(uploadedUrl)
+      } catch (cleanupError) {
+        console.error('Blob cleanup failed:', cleanupError)
+      }
+    }
+    if (error instanceof UsageLimitError) {
+      return NextResponse.json({
+        error: 'تم بلوغ حصة تخزين الملفات في الخطة الحالية. يمكن للمتجر الاستمرار في العمل، لكن يلزم التواصل مع المالك للترقية قبل رفع ملفات جديدة.',
+        code: 'USAGE_LIMIT_EXCEEDED',
+        resource: error.resource,
+      }, { status: 413 })
     }
     console.error('Blob upload error:', error)
     return NextResponse.json({ error: 'فشل رفع الملف. يرجى المحاولة لاحقاً.' }, { status: 500 })

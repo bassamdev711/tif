@@ -28,6 +28,11 @@ export async function POST(req: Request) {
         userAgent: req.headers.get('user-agent') || 'Unknown',
       },
     });
+    await prisma.adminNotificationPreference.upsert({
+      where: { id: 'singleton' },
+      update: { pushEnabled: true },
+      create: { id: 'singleton', pushEnabled: true },
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -48,6 +53,14 @@ export async function DELETE(req: Request) {
     await prisma.adminSubscription.deleteMany({
       where: { endpoint },
     });
+    const remainingSubscriptions = await prisma.adminSubscription.count();
+    if (remainingSubscriptions === 0) {
+      await prisma.adminNotificationPreference.upsert({
+        where: { id: 'singleton' },
+        update: { pushEnabled: false },
+        create: { id: 'singleton', pushEnabled: false },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

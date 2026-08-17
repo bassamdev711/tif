@@ -1,7 +1,7 @@
 'use server'
 
 import prisma from '@/lib/prisma'
-import { put } from '@vercel/blob'
+import { putTrackedBlob } from '@/lib/usage'
 import { revalidatePath } from 'next/cache'
 import { verifyAdmin } from '@/lib/auth'
 
@@ -95,10 +95,10 @@ export async function uploadOgImage(formData: FormData) {
     const file = formData.get('ogImage') as File
     if (!file || file.size === 0) return { success: false, error: 'لم يتم اختيار ملف' }
 
-    const blob = await put(`branding/og-image-${Date.now()}.${file.name.split('.').pop()}`, file, {
+    const blob = await putTrackedBlob(`branding/og-image-${Date.now()}.${file.name.split('.').pop()}`, file, {
       access: 'public',
       contentType: file.type,
-    })
+    }, 'branding', file.size)
 
     await prisma.storeSettings.upsert({
       where: { id: 'singleton' },
@@ -120,10 +120,10 @@ export async function uploadFavicon(formData: FormData) {
     const file = formData.get('favicon') as File
     if (!file || file.size === 0) return { success: false, error: 'لم يتم اختيار ملف' }
 
-    const blob = await put(`branding/favicon-${Date.now()}.${file.name.split('.').pop()}`, file, {
+    const blob = await putTrackedBlob(`branding/favicon-${Date.now()}.${file.name.split('.').pop()}`, file, {
       access: 'public',
       contentType: file.type,
-    })
+    }, 'branding', file.size)
 
     await prisma.storeSettings.upsert({
       where: { id: 'singleton' },

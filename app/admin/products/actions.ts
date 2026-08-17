@@ -2,7 +2,7 @@
 
 'use server';
 import prisma from '@/lib/prisma';
-import { put } from '@vercel/blob';
+import { putTrackedBlob } from '@/lib/usage';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
@@ -46,7 +46,7 @@ export async function createProduct(formData: FormData) {
   if (imageUrl && !imageUrl.startsWith('https://')) {
     const file = await fetch(imageUrl).then((r) => r.blob());
     const filename = `products/${Date.now()}-main-${Math.random().toString(36).slice(2)}.webp`;
-    const { url } = await put(filename, file, { access: 'public', token: blobToken });
+    const { url } = await putTrackedBlob(filename, file, { access: 'public', token: blobToken }, 'product', file.size);
     storedImageUrl = url;
   }
 
@@ -59,7 +59,7 @@ export async function createProduct(formData: FormData) {
       } else {
         const file = await fetch(img).then((r) => r.blob());
         const filename = `products/${Date.now()}-extra-${Math.random().toString(36).slice(2)}.webp`;
-        const { url } = await put(filename, file, { access: 'public', token: blobToken });
+        const { url } = await putTrackedBlob(filename, file, { access: 'public', token: blobToken }, 'product', file.size);
         storedExtraImages.push(url);
       }
     }
@@ -140,7 +140,7 @@ export async function updateProduct(formData: FormData) {
   if (imageUrl && !imageUrl.startsWith('https://')) {
     const file = await fetch(imageUrl).then((r) => r.blob());
     const filename = `products/${Date.now()}-main-${Math.random().toString(36).slice(2)}.webp`;
-    const { url } = await put(filename, file, { access: 'public', token: blobToken2 });
+    const { url } = await putTrackedBlob(filename, file, { access: 'public', token: blobToken2 }, 'product', file.size);
     storedImageUrl = url;
   }
 
@@ -152,7 +152,7 @@ export async function updateProduct(formData: FormData) {
       } else {
         const file = await fetch(img).then((r) => r.blob());
         const filename = `products/${Date.now()}-extra-${Math.random().toString(36).slice(2)}.webp`;
-        const { url } = await put(filename, file, { access: 'public', token: blobToken2 });
+        const { url } = await putTrackedBlob(filename, file, { access: 'public', token: blobToken2 }, 'product', file.size);
         storedExtraImages.push(url);
       }
     }
