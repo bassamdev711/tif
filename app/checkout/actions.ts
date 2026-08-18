@@ -10,6 +10,7 @@ import { validateCouponCode } from '@/app/admin/marketing/coupons/actions'
 import { createAdminNotification } from '@/lib/admin-notifications'
 import { createOrderUploadToken, verifyOrderUploadToken } from '@/lib/order-upload-token'
 import { createOrderTrackingToken } from '@/lib/order-tracking-token'
+import { ensureDefaultShippingCity } from '@/app/actions/shipping'
 
 const PAYMENT_METHODS = new Set(['cod', 'bank_transfer', 'wallets'])
 const RECEIPT_PAYMENT_METHODS = new Set(['bank_transfer', 'wallets'])
@@ -143,6 +144,7 @@ export async function createOrder(
     }
 
     const storeSettings = await prisma.storeSettings.findUnique({ where: { id: 'singleton' } })
+    await ensureDefaultShippingCity()
     const activeCities = await prisma.shippingCity.findMany({ where: { isActive: true } })
     let shippingFee = storeSettings ? Number(storeSettings.shippingFee) : 0
 
@@ -342,6 +344,8 @@ export async function getPaymentMethods() {
     where: { isActive: true },
     orderBy: { createdAt: 'desc' },
   })
+  await ensureDefaultShippingCity()
+
   const shippingCities = await prisma.shippingCity.findMany({
     where: { isActive: true },
     orderBy: { name: 'asc' },

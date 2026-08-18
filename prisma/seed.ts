@@ -20,6 +20,14 @@ async function main() {
     },
   })
 
+  const shippingCityCount = await prisma.shippingCity.count()
+  if (shippingCityCount === 0) {
+    await prisma.shippingCity.create({
+      data: { name: 'إب', shippingFee: 0, isActive: true },
+    })
+    console.log('Created default shipping city: إب')
+  }
+
   if (process.env.SEED_DEMO_DATA !== 'true') {
     console.log('Demo catalog skipped. Set SEED_DEMO_DATA=true to add sample products.')
     return

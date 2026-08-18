@@ -67,6 +67,13 @@ export default function CheckoutClient() {
         throw new Error('No data returned');
       }
       setPaymentSettings(data)
+      setFormData(prev => ({
+        ...prev,
+        governorate: 'إب',
+        city: data.shippingCities.find((city) => city.name === prev.city)?.name
+          || data.shippingCities[0]?.name
+          || '',
+      }))
       
       // Default payment method selection
       if (data?.settings) {
@@ -81,7 +88,7 @@ export default function CheckoutClient() {
       setPaymentSettings({
         settings: { codEnabled: false, bankTransferEnabled: false, walletsEnabled: false, codFee: 0 },
         storeSettings: { shippingFee: 0, freeShippingThreshold: 0 },
-        shippingCities: [],
+        shippingCities: [{ id: 'default-ibb', name: 'إب', shippingFee: 0 }],
         bankAccounts: [],
         digitalWallets: []
       });
@@ -119,15 +126,7 @@ export default function CheckoutClient() {
   let baseShippingFee = storeSettings.shippingFee;
   if (shippingCities.length > 0) {
     const selectedCity = shippingCities.find((c: ShippingCity) => c.name === formData.city);
-    if (selectedCity) {
-      baseShippingFee = selectedCity.shippingFee;
-    } else if (!formData.city && shippingCities[0]) {
-      // Auto-select first city if none selected
-      setTimeout(() => {
-        setFormData(prev => ({ ...prev, city: shippingCities[0].name }));
-      }, 0);
-      baseShippingFee = shippingCities[0].shippingFee;
-    }
+    if (selectedCity) baseShippingFee = selectedCity.shippingFee;
   }
 
   const isFreeShipping = storeSettings.freeShippingThreshold > 0 && cartTotal >= storeSettings.freeShippingThreshold;
@@ -303,42 +302,25 @@ export default function CheckoutClient() {
                       required
                       className="bg-transparent border-b border-black/20 pb-3 outline-none focus:border-brand transition-colors appearance-none"
                     >
-                      <option value="" disabled>اختر المحافظة</option>
-                      <option value="Riyadh">الرياض</option>
-                      <option value="Makkah">مكة المكرمة</option>
-                      <option value="Eastern">المنطقة الشرقية</option>
-                      <option value="Madinah">المدينة المنورة</option>
-                      <option value="Qassim">القصيم</option>
-                      <option value="Asir">عسير</option>
+                      <option value="إب">إب</option>
                     </select>
                   </div>
 
                   <div className="flex flex-col">
                     <label className="text-sm font-bold text-foreground/70 mb-2">المدينة</label>
-                    {paymentSettings.shippingCities && paymentSettings.shippingCities.length > 0 ? (
-                      <select 
-                        name="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        required
-                        className="bg-transparent border-b border-black/20 pb-3 outline-none focus:border-brand transition-colors appearance-none"
-                      >
-                        <option value="" disabled>اختر المدينة</option>
-                        {paymentSettings.shippingCities.map((city: ShippingCity) => (
-                          <option key={city.id} value={city.name}>{city.name}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input 
-                        type="text" 
-                        name="city"
-                        value={formData.city}
-                        onChange={handleChange}
-                        required
-                        placeholder="أدخل اسم المدينة"
-                        className="bg-transparent border-b border-black/20 pb-3 outline-none focus:border-brand transition-colors"
-                      />
-                    )}
+                    <select
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      required
+                      disabled={shippingCities.length === 0}
+                      className="bg-transparent border-b border-black/20 pb-3 outline-none focus:border-brand transition-colors appearance-none disabled:opacity-60"
+                    >
+                      <option value="" disabled>اختر المدينة</option>
+                      {shippingCities.map((city: ShippingCity) => (
+                        <option key={city.id} value={city.name}>{city.name}</option>
+                      ))}
+                    </select>
                   </div>
 
                   <div className="flex flex-col md:col-span-2">
@@ -661,7 +643,7 @@ export default function CheckoutClient() {
                   {isFreeShipping ? (
                     <span className="font-bold text-brand">مجاني</span>
                   ) : (
-                    <span className="font-bold">{storeSettings.shippingFee.toLocaleString('ar-SA')} {currency}</span>
+                    <span className="font-bold">{baseShippingFee.toLocaleString('ar-SA')} {currency}</span>
                   )}
                 </div>
                 {codFee > 0 && (

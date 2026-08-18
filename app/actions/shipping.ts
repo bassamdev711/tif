@@ -5,6 +5,24 @@ import { verifyAdmin } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
 const MAX_SHIPPING_FEE = 1_000_000
+const DEFAULT_SHIPPING_CITY_NAME = 'إب'
+
+/**
+ * Creates the only initial delivery city when the store has not been configured yet.
+ * Existing admin-managed cities are never overwritten or removed.
+ */
+export async function ensureDefaultShippingCity() {
+  const cityCount = await prisma.shippingCity.count()
+  if (cityCount > 0) return
+
+  return prisma.shippingCity.create({
+    data: {
+      name: DEFAULT_SHIPPING_CITY_NAME,
+      shippingFee: 0,
+      isActive: true,
+    },
+  })
+}
 
 function validateCityName(value: unknown): string | null {
   if (typeof value !== 'string') return null
@@ -22,6 +40,7 @@ function validateFee(value: unknown): number | null {
 export async function getShippingCities() {
   try {
     await verifyAdmin()
+    await ensureDefaultShippingCity()
     const cities = await prisma.shippingCity.findMany({
       orderBy: { name: 'asc' },
     })

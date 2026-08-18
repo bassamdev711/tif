@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Truck, CheckCircle2, AlertCircle, ShieldCheck, MapPin, Trash2, Plus } from 'lucide-react'
+import { Truck, CheckCircle2, AlertCircle, ShieldCheck, MapPin, Trash2, Plus, Pencil, Save, X } from 'lucide-react'
 import { updateStoreSettings } from './actions'
 import { addShippingCity, updateShippingCity, deleteShippingCity } from '@/app/actions/shipping'
 import { useCurrency } from '@/components/CurrencyProvider'
@@ -41,6 +41,10 @@ export default function ShippingSettingsClient({ initialSettings, initialCities 
   const [newCityFee, setNewCityFee] = useState('')
   const [isAddingCity, setIsAddingCity] = useState(false)
   const [cityError, setCityError] = useState('')
+  const [editingCityId, setEditingCityId] = useState<string | null>(null)
+  const [editCityName, setEditCityName] = useState('')
+  const [editCityFee, setEditCityFee] = useState('')
+  const [isSavingCity, setIsSavingCity] = useState(false)
 
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
@@ -130,7 +134,51 @@ export default function ShippingSettingsClient({ initialSettings, initialCities 
     const res = await updateShippingCity(id, { isActive: !currentStatus })
     if (res.success) {
       setCities(cities.map(c => c.id === id ? { ...c, isActive: !currentStatus } : c))
+    } else {
+      setCityError(res.error || 'حدث خطأ أثناء تحديث حالة المدينة')
     }
+  }
+
+  const startEditingCity = (city: ShippingCity) => {
+    setCityError('')
+    setEditingCityId(city.id)
+    setEditCityName(city.name)
+    setEditCityFee(String(city.shippingFee))
+  }
+
+  const cancelEditingCity = () => {
+    setEditingCityId(null)
+    setEditCityName('')
+    setEditCityFee('')
+  }
+
+  const handleSaveCity = async (id: string) => {
+    const name = editCityName.trim()
+    const fee = parseFloat(editCityFee)
+    if (name.length < 2) {
+      setCityError('الرجاء إدخال اسم مدينة صحيح')
+      return
+    }
+    if (isNaN(fee) || fee < 0) {
+      setCityError('الرجاء إدخال سعر صحيح')
+      return
+    }
+
+    setIsSavingCity(true)
+    setCityError('')
+    const res = await updateShippingCity(id, { name, shippingFee: fee })
+    if (res.success && res.data) {
+      setCities(cities.map(city => city.id === id
+        ? { ...city, name: res.data!.name, shippingFee: Number(res.data!.shippingFee) }
+        : city
+      ))
+      setSuccess('تم تحديث المدينة بنجاح')
+      cancelEditingCity()
+      setTimeout(() => setSuccess(''), 3000)
+    } else {
+      setCityError(res.error || 'حدث خطأ أثناء تحديث المدينة')
+    }
+    setIsSavingCity(false)
   }
 
   return (
@@ -207,7 +255,7 @@ export default function ShippingSettingsClient({ initialSettings, initialCities 
 
             <form onSubmit={handleAddCity} className="flex flex-col md:flex-row gap-4 items-end mb-6 bg-[#F9F7F2]/50 p-4 rounded-lg border border-black/5">
               <div className="flex-1 w-full">
-                <label className="block text-sm font-bold text-deep-green mb-2">اسم المدينة (مثال: الرياض، جدة)</label>
+                <label className="block text-sm font-bold text-deep-green mb-2">اسم المدينة</label>
                 <input
                   type="text"
                   value={newCityName}
@@ -258,30 +306,94 @@ export default function ShippingSettingsClient({ initialSettings, initialCities 
                 <tbody className="divide-y divide-black/5">
                   {cities.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-deep-green/50">لا توجد مدن مضافة بعد. سيتم استخدام تكلفة الشحن الأساسية والسماح للعميل بكتابة مدينته يدوياً حتى تضيف مدناً هنا.</td>
+                      <td colSpan={4} className="py-8 text-center text-deep-green/50">لا توجد مدن مضافة بعد. ستتم تهيئة محافظة إب تلقائياً كمدينة افتراضية، ويمكنك إضافة أو تعديل المدن من هنا.</td>
                     </tr>
                   ) : (
                     cities.map(city => (
                       <tr key={city.id} className="hover:bg-[#F9F7F2]/30 transition-colors">
-                        <td className="py-3 px-4 font-bold text-deep-green">{city.name}</td>
-                        <td className="py-3 px-4 text-deep-green">{city.shippingFee} ريال</td>
+                        {editingCityId === city.id ? (
+                          <>
+                            <td className="py-3 px-4">
+                              <input
+                                value={editCityName}
+                                onChange={(e) => setEditCityName(e.target.value)}
+                                className="w-full min-w-32 border border-black/10 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald/50"
+                                aria-label="اسم المدينة"
+                              />
+                            </td>
+                            <td className="py-3 px-4">
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                value={editCityFee}
+                                onChange={(e) => setEditCityFee(e.target.value)}
+                                className="w-28 border border-black/10 rounded-lg px-3 py-2 focus:outline-none focus:border-emerald/50"
+                                aria-label="تكلفة الشحن"
+                              />
+                            </td>
+                          </>
+                        ) : (
+                          <>
+                            <td className="py-3 px-4 font-bold text-deep-green">{city.name}</td>
+                            <td className="py-3 px-4 text-deep-green">{city.shippingFee} ريال</td>
+                          </>
+                        )}
                         <td className="py-3 px-4">
                           <button
                             type="button"
                             onClick={() => handleToggleCity(city.id, city.isActive)}
-                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${city.isActive ? 'bg-emerald' : 'bg-gray-300'}`}
+                            disabled={editingCityId === city.id}
+                            aria-label={city.isActive ? `تعطيل ${city.name}` : `تفعيل ${city.name}`}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 ${city.isActive ? 'bg-emerald' : 'bg-gray-300'}`}
                           >
                             <span className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${city.isActive ? '-translate-x-5' : '-translate-x-1'}`} />
                           </button>
                         </td>
                         <td className="py-3 px-4">
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteCity(city.id)}
-                            className="text-red-500 hover:text-red-700 transition-colors p-1"
-                          >
-                            <Trash2 size={16} />
-                          </button>
+                          <div className="flex items-center gap-2">
+                            {editingCityId === city.id ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveCity(city.id)}
+                                  disabled={isSavingCity}
+                                  className="text-emerald hover:text-deep-green transition-colors p-1 disabled:opacity-50"
+                                  aria-label="حفظ تعديلات المدينة"
+                                >
+                                  <Save size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={cancelEditingCity}
+                                  disabled={isSavingCity}
+                                  className="text-deep-green/60 hover:text-deep-green transition-colors p-1 disabled:opacity-50"
+                                  aria-label="إلغاء تعديل المدينة"
+                                >
+                                  <X size={16} />
+                                </button>
+                              </>
+                            ) : (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => startEditingCity(city)}
+                                  className="text-brand hover:text-deep-green transition-colors p-1"
+                                  aria-label={`تعديل ${city.name}`}
+                                >
+                                  <Pencil size={16} />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteCity(city.id)}
+                                  className="text-red-500 hover:text-red-700 transition-colors p-1"
+                                  aria-label={`حذف ${city.name}`}
+                                >
+                                  <Trash2 size={16} />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     ))
