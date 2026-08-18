@@ -29,28 +29,34 @@ export default async function SearchPage({
   const query = searchParams.q || ''
   
   let products: SearchProduct[] = []
+  let dataLoadFailed = false
   
   if (query) {
-    products = await prisma.product.findMany({
-      where: {
-        isActive: true,
-        OR: [
-          { name: { contains: query, mode: 'insensitive' } },
-          { brand: { contains: query, mode: 'insensitive' } },
-          { category: { contains: query, mode: 'insensitive' } },
-          { seoSearchPhrases: { hasSome: [query, query.trim(), query.toLowerCase()] } }
-        ]
-      },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        price: true,
-        compareAtPrice: true,
-        imageUrl: true,
-        category: true
-      }
-    })
+    try {
+      products = await prisma.product.findMany({
+        where: {
+          isActive: true,
+          OR: [
+            { name: { contains: query, mode: 'insensitive' } },
+            { brand: { contains: query, mode: 'insensitive' } },
+            { category: { contains: query, mode: 'insensitive' } },
+            { seoSearchPhrases: { hasSome: [query, query.trim(), query.toLowerCase()] } }
+          ]
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          price: true,
+          compareAtPrice: true,
+          imageUrl: true,
+          category: true
+        }
+      })
+    } catch (error) {
+      console.error('Failed to load search results:', error)
+      dataLoadFailed = true
+    }
   }
 
   return (
@@ -71,6 +77,12 @@ export default async function SearchPage({
           <div className="flex flex-col items-center justify-center py-20 opacity-50">
             <Search className="w-16 h-16 text-foreground mb-6" />
             <p className="text-xl font-bold">استخدم أيقونة البحث في الأعلى للبدء</p>
+          </div>
+        ) : dataLoadFailed ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white border border-black/5 rounded-3xl">
+            <Search className="w-16 h-16 text-foreground/20 mb-6" />
+            <h2 className="text-2xl font-bold text-foreground mb-3">تعذر تحميل نتائج البحث</h2>
+            <p className="text-foreground/60 text-center max-w-md">يرجى تحديث الصفحة والمحاولة لاحقاً.</p>
           </div>
         ) : products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8">

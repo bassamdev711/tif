@@ -25,32 +25,49 @@ export default async function ProductsPage({
   const currency = await getCurrency()
 
   const { collection } = await searchParams
+  let products: Array<{
+    id: string
+    slug: string
+    name: string
+    brand: string | null
+    price: unknown
+    compareAtPrice: unknown
+    imageUrl: string | null
+    featured: boolean
+  }> = []
+  let dbCollections: Array<{ name: string; slug: string; imageUrl: string | null }> = []
+  let dataLoadFailed = false
 
-  // جلب الحقول الأساسية فقط — لا حاجة للوصف أو الصور المتعددة في القائمة
-  const products = await prisma.product.findMany({
-    where: {
-      isActive: true,
-      stock: { gt: 0 },
-      ...(collection ? { collection: { slug: collection } } : {}),
-    },
-    orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
-    select: {
-      id: true,
-      slug: true,
-      name: true,
-      brand: true,
-      price: true,
-      compareAtPrice: true,
-      imageUrl: true,
-      featured: true,
-    },
-  })
+  try {
+    // جلب الحقول الأساسية فقط — لا حاجة للوصف أو الصور المتعددة في القائمة
+    products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        stock: { gt: 0 },
+        ...(collection ? { collection: { slug: collection } } : {}),
+      },
+      orderBy: [{ featured: 'desc' }, { createdAt: 'desc' }],
+      select: {
+        id: true,
+        slug: true,
+        name: true,
+        brand: true,
+        price: true,
+        compareAtPrice: true,
+        imageUrl: true,
+        featured: true,
+      },
+    })
 
-  // جلب التصنيفات النشطة للفلاتر
-  const dbCollections = await prisma.collection.findMany({
-    where: { isActive: true },
-    orderBy: { createdAt: 'desc' }
-  })
+    // جلب التصنيفات النشطة للفلاتر
+    dbCollections = await prisma.collection.findMany({
+      where: { isActive: true },
+      orderBy: { createdAt: 'desc' }
+    })
+  } catch (error) {
+    console.error('Failed to load products page data:', error)
+    dataLoadFailed = true
+  }
 
   // قائمة الروابط للـ Chips في الديسكتوب
   const chipFilters = [
@@ -72,7 +89,11 @@ export default async function ProductsPage({
 
         {/* Product Grid */}
         <section className="px-3 md:px-12 max-w-7xl mx-auto">
-          {products.length === 0 ? (
+          {dataLoadFailed ? (
+            <div className="text-center py-20 text-foreground/60 text-lg">
+              تعذر تحميل المنتجات حالياً. يرجى تحديث الصفحة والمحاولة لاحقاً.
+            </div>
+          ) : products.length === 0 ? (
             <div className="text-center py-20 text-foreground/50 text-lg">
               لا توجد منتجات في هذه المجموعة حالياً
             </div>

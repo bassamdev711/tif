@@ -40,6 +40,42 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
 
+function isValidCartItem(value: unknown): value is CartItem {
+  if (!value || typeof value !== 'object') return false
+  const item = value as Partial<CartItem>
+  return (
+    typeof item.id === 'string' && item.id.trim().length > 0 &&
+    typeof item.name === 'string' && item.name.trim().length > 0 &&
+    typeof item.slug === 'string' && item.slug.trim().length > 0 &&
+    typeof item.price === 'number' && Number.isFinite(item.price) && item.price >= 0 &&
+    typeof item.imageUrl === 'string' &&
+    typeof item.quantity === 'number' && Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 1000
+  )
+}
+
+function sanitizeCartItems(value: unknown): CartItem[] {
+  if (!Array.isArray(value)) return []
+  return value
+    .filter(isValidCartItem)
+    .map((item) => ({
+      ...item,
+      quantity: Math.min(item.quantity, Math.max(1, item.maxStock ?? 99)),
+      maxStock: Number.isInteger(item.maxStock) && item.maxStock > 0 ? Math.min(item.maxStock, 1000) : 99,
+    }))
+}
+
+function isValidCoupon(value: unknown): value is AppliedCoupon {
+  if (!value || typeof value !== 'object') return false
+  const coupon = value as Partial<AppliedCoupon>
+  return (
+    typeof coupon.code === 'string' && coupon.code.trim().length > 0 &&
+    (coupon.type === 'PERCENTAGE' || coupon.type === 'FIXED') &&
+    typeof coupon.value === 'number' && Number.isFinite(coupon.value) && coupon.value >= 0 &&
+    typeof coupon.discountAmount === 'number' && Number.isFinite(coupon.discountAmount) && coupon.discountAmount >= 0 &&
+    (coupon.minOrderAmount === null || (typeof coupon.minOrderAmount === 'number' && Number.isFinite(coupon.minOrderAmount) && coupon.minOrderAmount >= 0))
+  )
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const currency = useCurrency()
 
@@ -49,17 +85,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [couponLoading, setCouponLoading] = useState(false)
   const [couponError, setCouponError] = useState<string | null>(null)
 
-  // Load from local storage
+  // Load only validated values from local storage. Corrupted or stale browser state must not affect totals.
   useEffect(() => {
     try {
       const stored = localStorage.getItem('tif_cart')
       const storedCoupon = localStorage.getItem('tif_coupon')
+      const parsedCart = stored ? JSON.parse(stored) : []
+      const parsedCoupon = storedCoupon ? JSON.parse(storedCoupon) : null
+      const safeCart = sanitizeCartItems(parsedCart)
+      const safeCoupon = isValidCoupon(parsedCoupon) ? parsedCoupon : null
+
+      if (stored && safeCart.length !== (Array.isArray(parsedCart) ? parsedCart.length : 0)) {
+        localStorage.removeItem('tif_cart')
+      }
+      if (storedCoupon && !safeCoupon) {
+        localStorage.removeItem('tif_coupon')
+      }
+
       startTransition(() => {
-        if (stored) setCartItems(JSON.parse(stored))
-        if (storedCoupon) setAppliedCoupon(JSON.parse(storedCoupon))
+        setCartItems(safeCart)
+        setAppliedCoupon(safeCoupon)
       })
     } catch (error) {
       console.error('Failed to parse cart from local storage', error)
+      localStorage.removeItem('tif_cart')
+      localStorage.removeItem('tif_coupon')
+      startTransition(() => {
+        setCartItems([])
+        setAppliedCoupon(null)
+      })
     }
     startTransition(() => {
       setIsLoaded(true)

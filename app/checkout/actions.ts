@@ -40,7 +40,7 @@ function isValidCheckoutData(data: CheckoutData): boolean {
     fullName.length >= 2 &&
     phone.length >= 7 &&
     /^[+\d\s().-]+$/.test(phone) &&
-    governorate.length >= 2 &&
+    governorate === 'إب' &&
     city.length >= 2 &&
     address.length >= 5 &&
     PAYMENT_METHODS.has(data.paymentMethod)
@@ -85,11 +85,14 @@ export async function createOrder(
       return { success: false, error: 'بيانات الشحن غير مكتملة أو غير صالحة.' }
     }
 
-    if (!cartItems || cartItems.length === 0 || cartItems.length > 100) {
+    if (!Array.isArray(cartItems) || cartItems.length === 0 || cartItems.length > 100) {
       return { success: false, error: 'السلة فارغة أو تحتوي على عدد غير صالح من العناصر.' }
     }
 
-    if (cartItems.some((item) => !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 1000)) {
+    if (cartItems.some((item) => (
+      !item || typeof item !== 'object' || typeof item.id !== 'string' || item.id.trim().length === 0 ||
+      !Number.isInteger(item.quantity) || item.quantity <= 0 || item.quantity > 1000
+    ))) {
       return { success: false, error: 'كمية المنتجات غير صالحة.' }
     }
 
@@ -175,21 +178,35 @@ export async function createOrder(
       shippingFee = 0
     }
 
-    const paymentSettings = await prisma.paymentSettings.findUnique({ where: { id: 'singleton' } })
-    if (paymentSettings) {
-      if (checkoutData.paymentMethod === 'cod' && !paymentSettings.codEnabled) {
-        return { success: false, error: 'طريقة الدفع المختارة غير متاحة حالياً.' }
-      }
-      if (checkoutData.paymentMethod === 'bank_transfer' && !paymentSettings.bankTransferEnabled) {
+    const paymentSettings = await prisma.paymentSettings.upsert({
+      where: { id: 'singleton' },
+      update: {},
+      create: { id: 'singleton' },
+    })
+    if (checkoutData.paymentMethod === 'cod' && !paymentSettings.codEnabled) {
+      return { success: false, error: 'طريقة الدفع المختارة غير متاحة حالياً.' }
+    }
+    if (checkoutData.paymentMethod === 'bank_transfer') {
+      if (!paymentSettings.bankTransferEnabled) {
         return { success: false, error: 'التحويل البنكي غير متاح حالياً.' }
       }
-      if (checkoutData.paymentMethod === 'wallets' && !paymentSettings.walletsEnabled) {
+      const bankAccountCount = await prisma.bankAccount.count({ where: { isActive: true } })
+      if (bankAccountCount === 0) {
+        return { success: false, error: 'لا توجد حسابات بنكية متاحة حالياً.' }
+      }
+    }
+    if (checkoutData.paymentMethod === 'wallets') {
+      if (!paymentSettings.walletsEnabled) {
         return { success: false, error: 'المحافظ الإلكترونية غير متاحة حالياً.' }
       }
-      if (checkoutData.paymentMethod === 'cod') {
-        const codFee = Number(paymentSettings.codFee)
-        if (Number.isFinite(codFee) && codFee > 0) shippingFee += codFee
+      const walletCount = await prisma.digitalWallet.count({ where: { isActive: true } })
+      if (walletCount === 0) {
+        return { success: false, error: 'لا توجد محافظ إلكترونية متاحة حالياً.' }
       }
+    }
+    if (checkoutData.paymentMethod === 'cod') {
+      const codFee = Number(paymentSettings.codFee)
+      if (Number.isFinite(codFee) && codFee > 0) shippingFee += codFee
     }
 
     const finalTotal = discountedCartTotal + shippingFee

@@ -67,20 +67,22 @@ export default function CheckoutClient() {
         throw new Error('No data returned');
       }
       setPaymentSettings(data)
-      setFormData(prev => ({
-        ...prev,
-        governorate: 'إب',
-        city: data.shippingCities.find((city) => city.name === prev.city)?.name
-          || data.shippingCities[0]?.name
-          || '',
-      }))
-      
-      // Default payment method selection
-      if (data?.settings) {
-        if (!data.settings.bankTransferEnabled && formData.paymentMethod === 'bank_transfer') {
-           setFormData(prev => ({...prev, paymentMethod: data.settings?.codEnabled ? 'cod' : 'wallets'}))
+      setFormData(prev => {
+        const availableMethods = [
+          data.settings?.bankTransferEnabled && data.bankAccounts.length > 0 ? 'bank_transfer' : null,
+          data.settings?.walletsEnabled && data.digitalWallets.length > 0 ? 'wallets' : null,
+          data.settings?.codEnabled ? 'cod' : null,
+        ].filter((method): method is string => Boolean(method))
+
+        return {
+          ...prev,
+          governorate: 'إب',
+          city: data.shippingCities.find((city) => city.name === prev.city)?.name
+            || data.shippingCities[0]?.name
+            || '',
+          paymentMethod: availableMethods.includes(prev.paymentMethod) ? prev.paymentMethod : (availableMethods[0] || ''),
         }
-      }
+      })
     }).catch(err => {
       console.error('Failed to load payment methods:', err);
       setError('حدث خطأ أثناء تحميل إعدادات الدفع. يرجى تحديث الصفحة أو المحاولة لاحقاً.');
@@ -122,6 +124,12 @@ export default function CheckoutClient() {
 
   const storeSettings = paymentSettings.storeSettings;
   const shippingCities = paymentSettings.shippingCities || [];
+  const hasAvailablePaymentMethod = Boolean(
+    (paymentSettings.settings?.bankTransferEnabled && paymentSettings.bankAccounts.length > 0) ||
+    (paymentSettings.settings?.walletsEnabled && paymentSettings.digitalWallets.length > 0) ||
+    paymentSettings.settings?.codEnabled
+  )
+  const hasAvailableCity = shippingCities.length > 0
   
   let baseShippingFee = storeSettings.shippingFee;
   if (shippingCities.length > 0) {
@@ -167,6 +175,15 @@ export default function CheckoutClient() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isSubmitting) return
+
+    if (!hasAvailableCity) {
+      setError('لا توجد مدينة توصيل متاحة حالياً. يرجى التواصل مع المتجر أو المحاولة لاحقاً.')
+      return
+    }
+    if (!hasAvailablePaymentMethod) {
+      setError('لا توجد طريقة دفع متاحة حالياً. يرجى التواصل مع المتجر أو المحاولة لاحقاً.')
+      return
+    }
 
     const requiresReceipt = ['bank_transfer', 'wallets'].includes(formData.paymentMethod)
     if (requiresReceipt && !file) {
@@ -345,7 +362,12 @@ export default function CheckoutClient() {
                   طريقة الدفع
                 </h2>
                 <div className="space-y-3 md:space-y-4">
-                  {paymentSettings.settings?.bankTransferEnabled && (
+                  {!hasAvailablePaymentMethod && (
+                    <div className="bg-amber-50 text-amber-800 border border-amber-200 rounded-md p-4 text-sm font-bold">
+                      لا توجد طرق دفع متاحة حالياً. يرجى التواصل مع المتجر لإتمام الطلب.
+                    </div>
+                  )}
+                  {paymentSettings.settings?.bankTransferEnabled && paymentSettings.bankAccounts.length > 0 && (
                     <label className={`flex items-start p-3 md:p-6 border ${formData.paymentMethod === 'bank_transfer' ? 'border-brand bg-white shadow-sm' : 'border-black/10'} cursor-pointer transition-all hover:bg-black/5`}>
                       <input 
                         type="radio" 
@@ -446,7 +468,7 @@ export default function CheckoutClient() {
                     </label>
                   )}
 
-                  {paymentSettings.settings?.walletsEnabled && (
+                  {paymentSettings.settings?.walletsEnabled && paymentSettings.digitalWallets.length > 0 && (
                     <label className={`flex items-start p-3 md:p-6 border ${formData.paymentMethod === 'wallets' ? 'border-brand bg-white shadow-sm' : 'border-black/10'} cursor-pointer transition-all hover:bg-black/5`}>
                       <input 
                         type="radio" 
@@ -567,7 +589,7 @@ export default function CheckoutClient() {
 
               <button 
                 type="submit" 
-                disabled={isSubmitting}
+                disabled={isSubmitting || !hasAvailablePaymentMethod || !hasAvailableCity}
                 className="btn btn-primary w-full btn-lg gap-3 group !bg-accent !text-foreground hover:!bg-accent/90 border border-black/10 disabled:opacity-50 disabled:cursor-not-allowed md:h-16 h-14 md:text-lg"
               >
                 {isSubmitting ? 'جاري تأكيد الطلب...' : 'تأكيد الطلب الآن'}
