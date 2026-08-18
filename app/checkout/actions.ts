@@ -334,7 +334,11 @@ export async function updateOrderPaymentProof(
 }
 
 export async function getPaymentMethods() {
-  const settings = await prisma.paymentSettings.findUnique({ where: { id: 'singleton' } })
+  const settings = await prisma.paymentSettings.upsert({
+    where: { id: 'singleton' },
+    update: {},
+    create: { id: 'singleton' },
+  })
   const storeSettings = await prisma.storeSettings.findUnique({ where: { id: 'singleton' } })
   const bankAccounts = await prisma.bankAccount.findMany({
     where: { isActive: true },
@@ -352,9 +356,16 @@ export async function getPaymentMethods() {
   })
 
   return {
-    settings: settings
-      ? { ...settings, codFee: Number(settings.codFee) }
-      : null,
+    settings: {
+      bankTransferEnabled: settings.bankTransferEnabled,
+      bankTransferInstructions: settings.bankTransferInstructions,
+      walletsEnabled: settings.walletsEnabled,
+      walletsInstructions: settings.walletsInstructions,
+      codEnabled: settings.codEnabled,
+      codFee: Number(settings.codFee),
+      codInstructions: settings.codInstructions,
+      currency: settings.currency,
+    },
     storeSettings: {
       shippingFee: Number(storeSettings?.shippingFee || 0),
       freeShippingThreshold: Number(storeSettings?.freeShippingThreshold || 0),
@@ -364,7 +375,16 @@ export async function getPaymentMethods() {
       name: city.name,
       shippingFee: Number(city.shippingFee),
     })),
-    bankAccounts,
-    digitalWallets,
+    bankAccounts: bankAccounts.map((account) => ({
+      id: account.id,
+      bankName: account.bankName,
+      accountName: account.accountName,
+      accountNumber: account.accountNumber,
+    })),
+    digitalWallets: digitalWallets.map((wallet) => ({
+      id: wallet.id,
+      walletName: wallet.walletName,
+      accountNumber: wallet.accountNumber,
+    })),
   }
 }
